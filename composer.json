@@ -1,0 +1,29 @@
+{
+  "name": "swag/plugin-voucher-funding",
+  "description": "VoucherFunding plugin",
+  "version": "1.1.0",
+  "type": "shopware-platform-plugin",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Team Golden Stars"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "SwagVoucherFunding\\": "/src"
+    }
+  },
+  "require": {
+    "shopware/core": "*"
+  },
+  "extra": {
+    "shopware-plugin-class": "SwagVoucherFunding\\SwagVoucherFunding",
+    "plugin-icon": "Resources/config/plugin.png",
+    "copyright": "(c) by NFQ members",
+    "label": {
+      "de-DE": "Gutscheinfinanzierung plugin",
+      "en-GB": "VoucherFunding plugin"
+    }
+  }
+}
