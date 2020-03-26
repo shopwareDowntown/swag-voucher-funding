@@ -10,9 +10,53 @@
 
 # Installation
 
-* Checkout Plugin in `/custom/plugins/`
-* `git clone git@github.com:sw-tgs/swag-voucher-funding.git SwagVoucherFunding`
-* Install the Plugin with the Plugin Manager
+Portal & Plugin Voucher
+
+**1. Clone git Repositories**
+
+```bash
+git clone https://github.com/shopware/portal
+
+cd portal/custom/
+
+mkdir plugins 
+
+cd plugins
+
+git clone https://github.com/sw-tgs/SwagVoucherFunding
+```
+
+**2. Build Portal:**
+
+```bash
+# Back to portal directory
+cd ../../
+
+# Install dependencies
+composer install
+
+# (with option 1.dev, http://portal.test, database config..)
+bin/console system:setup 
+
+bin/console system:install --create-database --basic-setup
+
+# If you're using valet
+valet link portal.test
+```
+
+**3. Build Plugin**
+
+```bash
+bin/console plugin:refresh
+
+bin/console plugin:install --activate --clearCache SwagVoucherFunding
+```
+
+Now you can check the plugin is successfully installed
+
+```bash
+bin/console plugin:list
+```
 
 # Description
 
