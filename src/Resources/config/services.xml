@@ -9,7 +9,7 @@
             <tag name="shopware.entity.definition" entity="sold_voucher"/>
         </service>
 
-        <service id="SwagVoucherFunding\Service\VoucherFundingService">
+        <service id="SwagVoucherFunding\Service\VoucherFundingMerchantService">
             <argument type="service" id="sold_voucher.repository"/>
         </service>
 
@@ -18,7 +18,7 @@
         </service>
 
         <service id="SwagVoucherFunding\Subscriber\OrderStateChangedSubscriber">
-            <argument id="SwagVoucherFunding\Service\VoucherFundingService" type="service" />
+            <argument id="SwagVoucherFunding\Service\VoucherFundingMerchantService" type="service" />
             <argument type="service" id="order_line_item.repository"/>
             <tag name="kernel.event_subscriber"/>
         </service>
