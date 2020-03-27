@@ -58,8 +58,20 @@ Now you can check the plugin is successfully installed
 bin/console plugin:list
 ```
 
+**Run plugin migration**
+
+```bash
+# From portal directory
+
+# Migrate
+./bin/console database:migrate --all  SwagVoucherFunding
+
+# Migrate Destructive
+./bin/console database:migrate-destructive --all  SwagVoucherFunding
+```
+
 # Description
 
-As a user:
+Wiki: https://github.com/shopware/portal/wiki/voucherFunding
 
-As a Admin:
+Kanban board: https://github.com/shopware/portal/projects/2
