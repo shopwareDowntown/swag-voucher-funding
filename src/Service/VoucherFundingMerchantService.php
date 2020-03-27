@@ -13,17 +13,11 @@ class VoucherFundingMerchantService
      * @var EntityRepositoryInterface
      */
     private $soldVoucherRepository;
-    /**
-     * @var EntityRepositoryInterface
-     */
-    private $orderRepository;
 
     public function __construct(
-        EntityRepositoryInterface $soldVoucherRepository,
-        EntityRepositoryInterface $orderRepository
+        EntityRepositoryInterface $soldVoucherRepository
     ) {
         $this->soldVoucherRepository = $soldVoucherRepository;
-        $this->orderRepository = $orderRepository;
     }
 
     public function createSoldVoucher(OrderLineItemCollection $lineItemCollection, Context $context) : void
