@@ -6,6 +6,7 @@ use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity;
 use Shopware\Core\Framework\DataAbstractionLayer\Entity;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityIdTrait;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\PriceDefinitionField;
+use Shopware\Production\Merchants\Content\Merchant\MerchantEntity;
 
 class SoldVoucherEntity extends Entity
 {
@@ -15,6 +16,11 @@ class SoldVoucherEntity extends Entity
      * @var string
      */
     protected $orderLineItemId;
+
+    /**
+     * @var string
+     */
+    protected $merchantId;
 
     /**
      * @var string
@@ -34,7 +40,7 @@ class SoldVoucherEntity extends Entity
     /**
      * @var \DateTimeInterface|null
      */
-    protected $invalidated_at;
+    protected $redeemedAt;
 
     /**
      * @var OrderLineItemEntity
@@ -42,19 +48,26 @@ class SoldVoucherEntity extends Entity
     protected $orderLineItem;
 
     /**
+     * @var MerchantEntity
+     */
+    protected $merchant;
+
+
+
+    /**
      * @return \DateTimeInterface|null
      */
-    public function getInvalidatedAt(): ?\DateTimeInterface
+    public function getRedeemedAt(): ?\DateTimeInterface
     {
-        return $this->invalidated_at;
+        return $this->redeemedAt;
     }
 
     /**
-     * @param  \DateTimeInterface|null  $invalidated_at
+     * @param  \DateTimeInterface|null  $redeemedAt
      */
-    public function setInvalidatedAt(?\DateTimeInterface $invalidated_at): void
+    public function setRedeemedAt(?\DateTimeInterface $redeemedAt): void
     {
-        $this->invalidated_at = $invalidated_at;
+        $this->redeemedAt = $redeemedAt;
     }
 
     /**
@@ -106,6 +119,22 @@ class SoldVoucherEntity extends Entity
     }
 
     /**
+     * @return MerchantEntity
+     */
+    public function getMerchant() : MerchantEntity
+    {
+        return $this->merchant;
+    }
+
+    /**
+     * @param  MerchantEntity  $merchant
+     */
+    public function setMerchant(MerchantEntity $merchant) : void
+    {
+        $this->merchant = $merchant;
+    }
+
+    /**
      * @return string
      */
     public function getName(): string
@@ -119,5 +148,21 @@ class SoldVoucherEntity extends Entity
     public function setName(string $name): void
     {
         $this->name = $name;
+    }
+
+    /**
+     * @return string
+     */
+    public function getMerchantId(): string
+    {
+        return $this->merchantId;
+    }
+
+    /**
+     * @param  string  $merchantId
+     */
+    public function setMerchantId(string $merchantId): void
+    {
+        $this->merchantId = $merchantId;
     }
 }
