@@ -5,8 +5,12 @@
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
     <services>
+        <service id="SwagVoucherFunding\Checkout\ProductVoucherOrder\ProductVoucherOrderDefinition">
+            <tag name="shopware.entity.definition" entity="product_voucher_order"/>
+        </service>
+
         <service id="SwagVoucherFunding\Service\VoucherFundingService">
-            <argument id="Shopware\Storefront\Page\Product\ProductLoader" type="service"/>
+            <argument type="service" id="product_voucher_order.repository"/>
         </service>
 
         <service id="SwagVoucherFunding\Controller\VoucherFundingController" public="true">

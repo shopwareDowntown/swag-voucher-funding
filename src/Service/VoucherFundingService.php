@@ -8,13 +8,13 @@ use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
 class VoucherFundingService
 {
     /**
-     * @var ProductLoader
+     * @var EntityRepositoryInterface
      */
-    private $productLoader;
+    private $entityRepository;
 
     public function __construct(
-        ProductLoader $productLoader
+        EntityRepositoryInterface $entityRepository
     ) {
-        $this->productLoader = $productLoader;
+        $this->entityRepository = $entityRepository;
     }
 }
