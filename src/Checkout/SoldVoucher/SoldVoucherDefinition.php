@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace SwagVoucherFunding\Checkout\ProductVoucherOrder;
+namespace SwagVoucherFunding\Checkout\SoldVoucher;
 
 use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemDefinition;
 use Shopware\Core\Content\Product\ProductDefinition;
@@ -15,9 +15,9 @@ use Shopware\Core\Framework\DataAbstractionLayer\Field\PriceDefinitionField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\StringField;
 use Shopware\Core\Framework\DataAbstractionLayer\FieldCollection;
 
-class ProductVoucherOrderDefinition extends EntityDefinition
+class SoldVoucherDefinition extends EntityDefinition
 {
-    public const ENTITY_NAME = 'product_voucher_order';
+    public const ENTITY_NAME = 'sold_voucher';
 
     public function getEntityName(): string
     {
@@ -26,12 +26,12 @@ class ProductVoucherOrderDefinition extends EntityDefinition
 
     public function getCollectionClass(): string
     {
-        return ProductVoucherOrderCollection::class;
+        return SoldVoucherCollection::class;
     }
 
     public function getEntityClass(): string
     {
-        return ProductVoucherOrderEntity::class;
+        return SoldVoucherEntity::class;
     }
 
     protected function getParentDefinitionClass(): ?string
@@ -47,7 +47,6 @@ class ProductVoucherOrderDefinition extends EntityDefinition
             (new StringField('name', 'name'))->addFlags(new Required()),
             new PriceDefinitionField('value', 'value'),
             new FkField('order_line_item_id', 'orderLineItemId', OrderLineItemDefinition::class),
-            new FkField('product_id', 'productId', ProductDefinition::class),
             new DateTimeField('invalidated_at', 'invalidatedAt'),
 
             new ManyToOneAssociationField('orderLineItem', 'order_line_item_id', OrderLineItemDefinition::class, 'id', false),

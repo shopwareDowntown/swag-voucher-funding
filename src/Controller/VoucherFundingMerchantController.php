@@ -4,16 +4,16 @@ namespace SwagVoucherFunding\Controller;
 
 use Shopware\Core\Framework\Routing\Annotation\RouteScope;
 use Shopware\Storefront\Controller\StorefrontController;
-use SwagVoucherFunding\Service\VoucherFundingService;
+use SwagVoucherFunding\Service\VoucherFundingMerchantService;
 
 /**
  * @RouteScope(scopes={"storefront"})
  */
-class VoucherFundingController extends StorefrontController
+class VoucherFundingMerchantController extends StorefrontController
 {
     private $voucherFundingService;
 
-    public function __construct(VoucherFundingService $voucherFundingService)
+    public function __construct(VoucherFundingMerchantService $voucherFundingService)
     {
         $this->voucherFundingService = $voucherFundingService;
     }
