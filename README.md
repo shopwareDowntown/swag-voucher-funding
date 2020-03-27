@@ -66,8 +66,6 @@ bin/console plugin:list
 # Migrate
 ./bin/console database:migrate --all  SwagVoucherFunding
 
-# Migrate Destructive
-./bin/console database:migrate-destructive --all  SwagVoucherFunding
 ```
 
 # Description
@@ -75,3 +73,5 @@ bin/console plugin:list
 Wiki: https://github.com/shopware/portal/wiki/voucherFunding
 
 Kanban board: https://github.com/shopware/portal/projects/2
+
+DB Diagram: https://dbdiagram.io/d/5e7cdec74495b02c3b88d20c

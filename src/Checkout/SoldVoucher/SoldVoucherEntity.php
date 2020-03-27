@@ -1,14 +1,13 @@
 <?php declare(strict_types=1);
 
-namespace SwagVoucherFunding\Checkout\ProductVoucherOrder;
+namespace SwagVoucherFunding\Checkout\SoldVoucher;
 
 use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity;
-use Shopware\Core\Content\Product\ProductEntity;
 use Shopware\Core\Framework\DataAbstractionLayer\Entity;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityIdTrait;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\PriceDefinitionField;
 
-class ProductVoucherOrderEntity extends Entity
+class SoldVoucherEntity extends Entity
 {
     use EntityIdTrait;
 
@@ -16,11 +15,6 @@ class ProductVoucherOrderEntity extends Entity
      * @var string
      */
     protected $orderLineItemId;
-
-    /**
-     * @var string
-     */
-    protected $productId;
 
     /**
      * @var string
@@ -41,11 +35,6 @@ class ProductVoucherOrderEntity extends Entity
      * @var \DateTimeInterface|null
      */
     protected $invalidated_at;
-
-    /**
-     * @var ProductEntity|null
-     */
-    protected $product;
 
     /**
      * @var OrderLineItemEntity
@@ -98,38 +87,6 @@ class ProductVoucherOrderEntity extends Entity
     public function setOrderLineItemId(string $orderLineItemId): void
     {
         $this->orderLineItemId = $orderLineItemId;
-    }
-
-    /**
-     * @return string
-     */
-    public function getProductId(): string
-    {
-        return $this->productId;
-    }
-
-    /**
-     * @param  string  $productId
-     */
-    public function setProductId(string $productId): void
-    {
-        $this->productId = $productId;
-    }
-
-    /**
-     * @return ProductEntity|null
-     */
-    public function getProduct(): ?ProductEntity
-    {
-        return $this->product;
-    }
-
-    /**
-     * @param  ProductEntity|null  $product
-     */
-    public function setProduct(?ProductEntity $product): void
-    {
-        $this->product = $product;
     }
 
     /**

@@ -5,20 +5,21 @@
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
     <services>
-        <service id="SwagVoucherFunding\Checkout\ProductVoucherOrder\ProductVoucherOrderDefinition">
-            <tag name="shopware.entity.definition" entity="product_voucher_order"/>
+        <service id="SwagVoucherFunding\Checkout\SoldVoucher\SoldVoucherDefinition">
+            <tag name="shopware.entity.definition" entity="sold_voucher"/>
         </service>
 
         <service id="SwagVoucherFunding\Service\VoucherFundingService">
-            <argument type="service" id="product_voucher_order.repository"/>
+            <argument type="service" id="sold_voucher.repository"/>
         </service>
 
-        <service id="SwagVoucherFunding\Controller\VoucherFundingController" public="true">
-            <argument id="SwagVoucherFunding\Service\VoucherFundingService" type="service"/>
+        <service id="SwagVoucherFunding\Controller\VoucherFundingMerchantController" public="true">
+            <argument id="SwagVoucherFunding\Service\VoucherFundingMerchantService" type="service"/>
         </service>
 
-        <service id="SwagVoucherFunding\Subscriber\ProductSubscriber">
+        <service id="SwagVoucherFunding\Subscriber\OrderStateChangedSubscriber">
             <argument id="SwagVoucherFunding\Service\VoucherFundingService" type="service" />
+            <argument type="service" id="order_line_item.repository"/>
             <tag name="kernel.event_subscriber"/>
         </service>
     </services>
