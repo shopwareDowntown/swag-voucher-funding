@@ -2,23 +2,23 @@
 
 namespace SwagVoucherFunding\Service;
 
+use Shopware\Core\Checkout\Cart\Price\Struct\AbsolutePriceDefinition;
 use Shopware\Core\Content\MailTemplate\Service\MailSender;
 use Shopware\Core\Content\MailTemplate\Service\MessageFactory;
 use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Adapter\Twig\StringTemplateRenderer;
-use Shopware\Core\Checkout\Cart\Price\Struct\AbsolutePriceDefinition;
 use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity;
 use Shopware\Core\Framework\Context;
+use Shopware\Core\Framework\DataAbstractionLayer\EntityCollection;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\ContainsFilter;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
-use Shopware\Core\Framework\DataAbstractionLayer\EntityCollection;
 use Shopware\Core\Framework\Util\Random;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
+use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Dompdf\Dompdf;
 use Shopware\Core\Framework\Uuid\Uuid;
 use Shopware\Core\Framework\Validation\DataBag\DataBag;
-use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Shopware\Core\System\SystemConfig\SystemConfigEntity;
 use Shopware\Production\Merchants\Content\Merchant\MerchantEntity;
 use SwagVoucherFunding\Checkout\SoldVoucher\SoldVoucherEntity;
@@ -69,6 +69,16 @@ class VoucherFundingMerchantService
         $this->messageFactory = $messageFactory;
         $this->mailSender = $mailSender;
         $this->templateRenderer = $templateRenderer;
+    }
+
+    public function loadSoldVouchers(string $merchantId, SalesChannelContext $context) : array
+    {
+        $criteria = new Criteria([$merchantId]);
+        $criteria->addAssociation('merchants');
+
+        $soldVouchers[] = $this->soldVoucherRepository->search($criteria, $context->getContext());
+
+        return $soldVouchers;
     }
 
     /**
