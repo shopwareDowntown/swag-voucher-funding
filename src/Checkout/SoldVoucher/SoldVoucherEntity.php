@@ -52,8 +52,6 @@ class SoldVoucherEntity extends Entity
      */
     protected $merchant;
 
-
-
     /**
      * @return \DateTimeInterface|null
      */
