@@ -25,14 +25,16 @@ class VoucherFundingMerchantController extends StorefrontController
     }
 
     /**
-     * @Route("/merchant-api/{version}/voucher/redeem", name="merchant-api.action.voucher-redeem", methods={"POST"})
+     * @Route("/merchant-api/{version}/voucher-funding/redeem", name="merchant-api.action.voucher-funding.redeem", methods={"POST"})
      * @throws CustomerNotLoggedInException
      */
     public function redeemVoucher(Request $request, SalesChannelContext $context): JsonResponse
     {
+        $voucherCode = $request->request->get('code');
+
         $merchant = SalesChannelContextExtension::extract($context);
 
-        $this->voucherFundingService->redeemVoucher($merchant, $context);
+        $this->voucherFundingService->redeemVoucher($voucherCode, $merchant, $context);
 
         return new JsonResponse(['code' => 200, 'Content' => 'success']);
     }

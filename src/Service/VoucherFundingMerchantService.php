@@ -2,7 +2,6 @@
 
 namespace SwagVoucherFunding\Service;
 
-use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemCollection;
 use Shopware\Core\Content\MailTemplate\Service\MailSender;
 use Shopware\Core\Content\MailTemplate\Service\MessageFactory;
 use Shopware\Core\Framework\Adapter\Twig\StringTemplateRenderer;
@@ -13,8 +12,6 @@ use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\ContainsFilter;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityCollection;
-use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
-use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Shopware\Core\Framework\Util\Random;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
 use Dompdf\Dompdf;
@@ -23,9 +20,6 @@ use Shopware\Core\Framework\Validation\DataBag\DataBag;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Shopware\Core\System\SystemConfig\SystemConfigEntity;
 use Shopware\Production\Merchants\Content\Merchant\MerchantEntity;
-use Swag\PayPal\PayPal\Api\Payment\Transaction\RelatedResource\Sale;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\VarDumper\Cloner\Data;
 
 class VoucherFundingMerchantService
 {
@@ -108,9 +102,11 @@ class VoucherFundingMerchantService
         $this->soldVoucherRepository->create($vouchers, $context);
     }
 
-    public function redeemVoucher(MerchantEntity $merchant, SalesChannelContext $context)
+    public function redeemVoucher(string $redeemVoucher, MerchantEntity $merchant, SalesChannelContext $context)
     {
-        $this->sendEmailCustomer($merchant, $context);
+        $this->soldVoucherRepository->search([
+
+        ]);
     }
 
     private function sendEmailCustomer(MerchantEntity $merchant, SalesChannelContext $context)
