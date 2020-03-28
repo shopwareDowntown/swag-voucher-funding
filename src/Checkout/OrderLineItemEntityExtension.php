@@ -20,7 +20,7 @@ class OrderLineItemEntityExtension implements EntityExtensionInterface
     public function extendFields(FieldCollection $collection): void
     {
         $collection->add(
-            new OneToManyAssociationField('soldVouchers', SoldVoucherDefinition::class, 'order_line_item_id'),
+            new OneToManyAssociationField('soldVouchers', SoldVoucherDefinition::class, 'order_line_item_id')
         );
     }
 }
