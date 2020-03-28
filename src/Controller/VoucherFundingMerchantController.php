@@ -32,11 +32,14 @@ class VoucherFundingMerchantController extends StorefrontController
     {
         $voucherCode = $request->request->get('code');
 
+        if (!$voucherCode) {
+            throw new \InvalidArgumentException('Please input voucher code to redeem');
+        }
+
         $merchant = SalesChannelContextExtension::extract($context);
 
         $this->voucherFundingService->redeemVoucher($voucherCode, $merchant, $context);
-
-        return new JsonResponse(['code' => 200, 'Content' => 'success']);
+        return new JsonResponse(['code' => 200, 'Content' => 'Redeem voucher successfully']);
     }
 
 }

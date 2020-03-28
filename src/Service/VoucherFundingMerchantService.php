@@ -4,6 +4,7 @@ namespace SwagVoucherFunding\Service;
 
 use Shopware\Core\Content\MailTemplate\Service\MailSender;
 use Shopware\Core\Content\MailTemplate\Service\MessageFactory;
+use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Adapter\Twig\StringTemplateRenderer;
 use Shopware\Core\Checkout\Cart\Price\Struct\AbsolutePriceDefinition;
 use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity;
@@ -20,6 +21,8 @@ use Shopware\Core\Framework\Validation\DataBag\DataBag;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Shopware\Core\System\SystemConfig\SystemConfigEntity;
 use Shopware\Production\Merchants\Content\Merchant\MerchantEntity;
+use SwagVoucherFunding\Checkout\SoldVoucher\SoldVoucherEntity;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class VoucherFundingMerchantService
 {
@@ -102,11 +105,24 @@ class VoucherFundingMerchantService
         $this->soldVoucherRepository->create($vouchers, $context);
     }
 
-    public function redeemVoucher(string $redeemVoucher, MerchantEntity $merchant, SalesChannelContext $context)
+    public function redeemVoucher(string $voucherCode, MerchantEntity $merchant, SalesChannelContext $context) : void
     {
-        $this->soldVoucherRepository->search([
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('code', $voucherCode));
+        $criteria->addFilter(new EqualsFilter('redeemedAt', null));
+        $criteria->addFilter(new EqualsFilter('merchantId', $merchant->getId()));
 
-        ]);
+        /** @var SoldVoucherEntity $voucher */
+        $voucher = $this->soldVoucherRepository->search($criteria, $context->getContext())->first();
+
+        if(!$voucher) {
+            throw new NotFoundHttpException(sprintf('Cannot find valid voucher with code %s', $voucherCode));
+        }
+
+        $this->soldVoucherRepository->update([[
+            'id' => $voucher->getId(),
+            'redeemedAt' => (new \DateTime())->format(Defaults::STORAGE_DATE_TIME_FORMAT)
+        ]], $context->getContext());
     }
 
     private function sendEmailCustomer(MerchantEntity $merchant, SalesChannelContext $context)
