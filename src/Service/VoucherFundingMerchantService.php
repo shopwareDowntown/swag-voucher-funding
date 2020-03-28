@@ -193,7 +193,7 @@ class VoucherFundingMerchantService
 
         foreach ($voucherUrls as $voucherUrl) {
             try {
-//                $this->publicFilesystem->delete($voucherUrl);
+                $this->publicFilesystem->delete($voucherUrl);
             } catch (FileNotFoundException $e) {
                 // TODO: Handle FileNotFound
             }
