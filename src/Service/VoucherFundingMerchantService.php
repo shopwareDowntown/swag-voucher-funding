@@ -73,12 +73,10 @@ class VoucherFundingMerchantService
 
     public function loadSoldVouchers(string $merchantId, SalesChannelContext $context) : array
     {
-        $criteria = new Criteria([$merchantId]);
-        $criteria->addAssociation('merchants');
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('merchantId', $merchantId));
 
-        $soldVouchers[] = $this->soldVoucherRepository->search($criteria, $context->getContext());
-
-        return $soldVouchers;
+        return $this->soldVoucherRepository->search($criteria, $context->getContext())->getElements();
     }
 
     /**

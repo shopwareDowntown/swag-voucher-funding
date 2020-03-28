@@ -2,6 +2,7 @@
 
 namespace SwagVoucherFunding\Checkout\SoldVoucher;
 
+use Shopware\Core\Checkout\Cart\Price\Struct\PriceDefinitionInterface;
 use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity;
 use Shopware\Core\Framework\DataAbstractionLayer\Entity;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityIdTrait;
@@ -33,7 +34,7 @@ class SoldVoucherEntity extends Entity
     protected $code;
 
     /**
-     * @var PriceDefinitionField
+     * @var PriceDefinitionInterface
      */
     protected $value;
 
@@ -69,17 +70,17 @@ class SoldVoucherEntity extends Entity
     }
 
     /**
-     * @return PriceDefinitionField
+     * @return PriceDefinitionInterface
      */
-    public function getValue(): PriceDefinitionField
+    public function getValue(): PriceDefinitionInterface
     {
         return $this->value;
     }
 
     /**
-     * @param  PriceDefinitionField  $value
+     * @param  PriceDefinitionInterface  $value
      */
-    public function setValue(PriceDefinitionField $value): void
+    public function setValue(PriceDefinitionInterface $value): void
     {
         $this->value = $value;
     }
@@ -162,5 +163,21 @@ class SoldVoucherEntity extends Entity
     public function setMerchantId(string $merchantId): void
     {
         $this->merchantId = $merchantId;
+    }
+
+    /**
+     * @return string
+     */
+    public function getCode(): string
+    {
+        return $this->code;
+    }
+
+    /**
+     * @param  string  $code
+     */
+    public function setCode(string $code): void
+    {
+        $this->code = $code;
     }
 }
