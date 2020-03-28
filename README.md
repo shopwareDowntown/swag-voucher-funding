@@ -70,8 +70,6 @@ bin/console plugin:list
 
 # Description
 
-Wiki: https://github.com/shopware/portal/wiki/voucherFunding
-
-Kanban board: https://github.com/shopware/portal/projects/2
+Wiki: https://github.com/sw-tgs/SwagVoucherFunding/wiki Or https://github.com/shopware/portal/wiki/voucherFunding
 
 DB Diagram: https://dbdiagram.io/d/5e7cdec74495b02c3b88d20c
