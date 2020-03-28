@@ -3,13 +3,33 @@
         xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/platform/master/src/Core/System/SystemConfig/Schema/config.xsd">
 
     <card>
-        <title>Voucher Funding</title>
-        <title lang="de-DE">Gutscheinfinanzierung</title>
+        <title>Options</title>
+        <title lang="de-DE">Optionen</title>
 
-        <input-field type="bool">
-            <name>Status</name>
-            <label>Active</label>
-            <label lang="de-DE">Aktiv</label>
+        <input-field>
+            <name>subject</name>
+            <label>Subject</label>
+            <label lang="de-DE">Gegenstand</label>
+            <placeholder>Enter email template subject...</placeholder>
+            <placeholder lang="de-DE">Betreff eingeben ..</placeholder>
+            <helpText>Please fill in Subject</helpText>
+            <helpText lang="de-DE">Bitte füllen Sie den Betreff aus</helpText>
         </input-field>
+
+        <input-field>
+            <name>senderName</name>
+            <label>Sender name</label>
+            <label lang="de-DE">Absender</label>
+            <placeholder>Enter sender name...</placeholder>
+        </input-field>
+
+    </card>
+
+    <card>
+        <title>Voucher PDF template</title>
+        <title lang="de-DE">Voucher PDF-Vorlage</title>
+        <component name="sw-code-editor">
+            <name>pdfTemplate</name>
+        </component>
     </card>
 </config>
