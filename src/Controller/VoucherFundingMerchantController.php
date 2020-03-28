@@ -6,6 +6,7 @@ use Shopware\Core\Checkout\Cart\Exception\CustomerNotLoggedInException;
 use Shopware\Core\Framework\Routing\Annotation\RouteScope;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Shopware\Production\Merchants\Content\Merchant\SalesChannelContextExtension;
+use Shopware\Storefront\Controller\StorefrontController;
 use SwagVoucherFunding\Service\VoucherFundingMerchantService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -24,7 +25,7 @@ class VoucherFundingMerchantController extends StorefrontController
     }
 
     /**
-     * @Route(name="voucher-funding-merchant-api.sold.vouchers.load", path="/merchant-api/v{version}/voucher-funding/sold/vouchers", methods={"GET"})
+     * @Route(name="merchant-api.action.sold.vouchers.load", path="/merchant-api/v{version}/voucher-funding/sold/vouchers", methods={"GET"})
      * @throws CustomerNotLoggedInException
      */
     public function loadSoldVouchers(SalesChannelContext $context) : JsonResponse
