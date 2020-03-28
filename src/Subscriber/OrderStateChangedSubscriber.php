@@ -44,6 +44,8 @@ class OrderStateChangedSubscriber implements EventSubscriberInterface
     {
         return [
             'state_enter.order.state.completed' => 'orderStateCompleted',
+            'state_enter.order.state.in_progress' => 'orderStateCompleted',
+            'state_enter.order.state.open' => 'orderStateCompleted',
         ];
     }
 
@@ -61,7 +63,7 @@ class OrderStateChangedSubscriber implements EventSubscriberInterface
 
         $merchant = $this->fetchMerchantFromSalesChannel($event->getSalesChannelId(), $context);
 
-        $this->voucherFundingService->createSoldVoucher($merchant->getId(), $voucherLineItems->getEntities(), $context);
+        $this->voucherFundingService->createSoldVoucher($merchant, $order, $voucherLineItems->getEntities(), $context);
     }
 
     private function getVoucherLineItemsOfOrder(string $orderId, Context $context): EntitySearchResult
@@ -90,7 +92,8 @@ class OrderStateChangedSubscriber implements EventSubscriberInterface
     private function fetchMerchantFromSalesChannel(string $salesChannelId, Context $context): MerchantEntity
     {
         $criteria = new Criteria();
-        $criteria->addFilter(new EqualsFilter('salesChannelId', $salesChannelId));
+        $criteria->addFilter(new EqualsFilter('salesChannelId', 'ad5336ddd4fd4536b09da87e3f5a447f'));
+//        $criteria->addFilter(new EqualsFilter('salesChannelId', $salesChannelId));
 
         /** @var MerchantEntity|null $merchant */
         $merchant = $this->merchantRepository->search($criteria, $context)->first();

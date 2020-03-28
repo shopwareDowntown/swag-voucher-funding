@@ -47,7 +47,7 @@ class SwagVoucherFunding extends Plugin
             [
                 'id' => Uuid::randomHex(),
                 'configurationKey' => $this->getName() . '.config.subject',
-                'configurationValue' => 'Your voucher with {{ salesChannel.name }}'
+                'configurationValue' => 'Your voucher with {{ merchant.publicCompanyName }}'
             ]
         ], $context);
 
@@ -55,7 +55,7 @@ class SwagVoucherFunding extends Plugin
             [
                 'id' => Uuid::randomHex(),
                 'configurationKey' => $this->getName() . '.config.senderName',
-                'configurationValue' => '{{ salesChannel.name }}'
+                'configurationValue' => '{{ merchant.publicCompanyName }}'
             ]
         ], $context);
     }
@@ -80,30 +80,6 @@ class SwagVoucherFunding extends Plugin
 
     private function pdfTemplate(): string
     {
-        $templateHtml = '<table style="width: 100%;line-height: 18px;">';
-        $templateHtml .= '<tbody>';
-        $templateHtml .= '<tr>';
-        $templateHtml .= '<td valign="top" style="background-color: #e6e7e9; text-align: center;">';
-        $templateHtml .= '<div style="padding-top: 80px; font-size: 46px;">GUTSCHEIN</div>';
-        $templateHtml .= '<div style="padding-top: 220px;color: #a79056;font-size: 110px;">{{ price }}</div>';
-        $templateHtml .= '<div style="padding-top: 161px;">bottom</div>';
-        $templateHtml .= '</td>';
-        $templateHtml .= '<td style="width: 200px;padding: 30px;">';
-        $templateHtml .= '<p><strong>Einlöseadresse</strong></p>';
-        $templateHtml .= '<p>shopware AG<br>Ebbinghoff 10<br>48624 Schoeppingen</p>';
-        $templateHtml .= '<p><br>Telefon: 00 800 746 7626 0<br>E-Mail: <a href="mailto:langeemail@shopware.com">langeemail@shopware.com</a><br>Web: <a href="http://www.shopware.com">www.shopware.com</a></p>';
-        $templateHtml .= '<p><br><strong>Glütigkeit</strong><br>Sequatat ecaborrum ipid quamusa pelique re, offici beroviti dolupta tenisim latiis es offici simodit, quodit, incte quo bea quaes es simodit. Dieser Gutschein ist ausgestellt auf den Namen<br>Maximilian Mustermann</p>';
-        $templateHtml .= '<p><br><strong>Ausstellungsdatum</strong></p>';
-        $templateHtml .= '<p>{{ today }}</p>';
-        $templateHtml .= '<p>&nbsp;</p>';
-        $templateHtml .= '<p><strong>Gutscheinnummer</strong></p>';
-        $templateHtml .= '<p>{{ code }}</p>';
-        $templateHtml .= '</td>';
-        $templateHtml .= '</tr>';
-        $templateHtml .= '</tbody>';
-        $templateHtml .= '</table>';
-        $templateHtml .= '<style>strong {color: #a79056;}</style>';
-
-        return $templateHtml;
+        return file_get_contents(__DIR__ . '/Resources/views/pdf_template.html.twig');
     }
 }
