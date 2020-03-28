@@ -6,9 +6,14 @@ use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemCollection
 use Shopware\Core\Content\MailTemplate\Service\MailSender;
 use Shopware\Core\Content\MailTemplate\Service\MessageFactory;
 use Shopware\Core\Framework\Adapter\Twig\StringTemplateRenderer;
+use Shopware\Core\Checkout\Cart\Price\Struct\AbsolutePriceDefinition;
+use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\ContainsFilter;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
+use Shopware\Core\Framework\DataAbstractionLayer\EntityCollection;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Shopware\Core\Framework\Util\Random;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
@@ -69,18 +74,35 @@ class VoucherFundingMerchantService
         $this->templateRenderer = $templateRenderer;
     }
 
-    public function createSoldVoucher(OrderLineItemCollection $lineItemCollection, Context $context) : void
+    /**
+     * @param  string  $merchantId
+     * @param  EntityCollection  $lineItemCollection
+     * @param  Context  $context
+     */
+    public function createSoldVoucher(string $merchantId, EntityCollection $lineItemCollection, Context $context) : void
     {
         $vouchers = [];
 
-        foreach ($lineItemCollection->getIterator() as $lineItemEntity) {
-            $voucher = [];
-            $voucher['order_line_item_id'] = $lineItemEntity->getId();
-            $voucher['name'] = $lineItemEntity->getProduct()->getName();
-            $voucher['code'] = self::generateVoucherCode(10);
-            $voucher['price'] = $lineItemEntity->getPrice();
+        /** @var OrderLineItemEntity $lineItemEntity */
+        foreach ($lineItemCollection as $lineItemEntity) {
+            $voucherNum = $lineItemEntity->getQuantity();
+            $voucherName = $lineItemEntity->getProduct()->getName();
+            $voucherLineItemId = $lineItemEntity->getId();
+            $lineItemPrice = $lineItemEntity->getPriceDefinition();
+            $voucherValue = new AbsolutePriceDefinition($lineItemPrice->getPrice(), $lineItemPrice->getPrecision());
 
-            $vouchers[] = $voucher;
+            for ($i = 0; $i < $voucherNum; $i++) {
+                $code =  $this->generateUniqueVoucherCode($merchantId, $context);
+
+                $voucher = [];
+                $voucher['merchantId'] = $merchantId;
+                $voucher['orderLineItemId'] = $voucherLineItemId;
+                $voucher['name'] = $voucherName;
+                $voucher['code'] = $code;
+                $voucher['value'] = $voucherValue;
+
+                $vouchers[] = $voucher;
+            }
         }
 
         $this->soldVoucherRepository->create($vouchers, $context);
@@ -121,9 +143,29 @@ class VoucherFundingMerchantService
         }
     }
 
-    public static function generateVoucherCode(int $length = 10)
+    private function generateUniqueVoucherCode(string $merchantId, Context $context)
     {
-        return mb_strtoupper(str_replace(['+', '/', '='], ['-', '_', ''], base64_encode(Random::getAlphanumericString($length))));
+        $code = $this->generateVoucherCode();
+
+        if($this->checkCodeUnique($merchantId, $code, $context)) {
+            return $code;
+        }
+
+        return $this->generateUniqueVoucherCode($merchantId, $context);
+    }
+
+    private function checkCodeUnique(string $merchantId, string $code, Context $context)
+    {
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('merchantId', $merchantId));
+        $criteria->addFilter(new EqualsFilter('code', $code));
+
+        return $this->soldVoucherRepository->search($criteria, $context)->count() === 0;
+    }
+
+    private function generateVoucherCode(int $length = 10)
+    {
+        return mb_strtoupper(Random::getAlphanumericString($length));
     }
 
     private function getSubjectTemplate(SalesChannelContext $context): string

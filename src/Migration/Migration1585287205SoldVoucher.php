@@ -20,6 +20,7 @@ class Migration1585287205SoldVoucher extends MigrationStep
     `order_line_item_id` BINARY(16) NOT NULL,
     `code` CHAR(10) NOT NULL,
     `name` VARCHAR (255) NOT NULL,
+    `value` JSON NOT NULL,
     `redeemed_at` DATETIME(3) NULL,
     `created_at` DATETIME(3) NOT NULL,
     `updated_at` DATETIME(3) NULL,
