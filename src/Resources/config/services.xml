@@ -13,6 +13,11 @@
             <argument type="service" id="sold_voucher.repository"/>
         </service>
 
+        <service id="SwagVoucherFunding\Service\CartValidator">
+            <argument type="service" id="product.repository"/>
+            <tag name="shopware.cart.validator"/>
+        </service>
+
         <service id="SwagVoucherFunding\Controller\VoucherFundingMerchantController" public="true">
             <argument id="SwagVoucherFunding\Service\VoucherFundingMerchantService" type="service"/>
         </service>
