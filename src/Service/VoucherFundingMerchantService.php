@@ -2,29 +2,17 @@
 
 namespace SwagVoucherFunding\Service;
 
-use League\Flysystem\FileNotFoundException;
-use League\Flysystem\FilesystemInterface;
 use Shopware\Core\Checkout\Cart\Price\Struct\AbsolutePriceDefinition;
-use Shopware\Core\Checkout\Order\Aggregate\OrderCustomer\OrderCustomerEntity;
 use Shopware\Core\Checkout\Order\OrderEntity;
-use Shopware\Core\Content\MailTemplate\Service\MailSender;
-use Shopware\Core\Content\MailTemplate\Service\MessageFactory;
 use Shopware\Core\Defaults;
-use Shopware\Core\Framework\Adapter\Twig\StringTemplateRenderer;
 use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityCollection;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
-use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\ContainsFilter;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Shopware\Core\Framework\Util\Random;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
-use Shopware\Core\System\Currency\CurrencyEntity;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
-use Dompdf\Dompdf;
-use Shopware\Core\Framework\Uuid\Uuid;
-use Shopware\Core\Framework\Validation\DataBag\DataBag;
-use Shopware\Core\System\SystemConfig\SystemConfigEntity;
 use Shopware\Production\Merchants\Content\Merchant\MerchantEntity;
 use SwagVoucherFunding\Checkout\SoldVoucher\SoldVoucherEntity;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -123,6 +111,32 @@ class VoucherFundingMerchantService
             'id' => $voucher->getId(),
             'redeemedAt' => (new \DateTime())->format(Defaults::STORAGE_DATE_TIME_FORMAT)
         ]], $context->getContext());
+    }
+
+    public function getVoucherStatus(string $voucherCode, MerchantEntity $merchant, SalesChannelContext $context): array
+    {
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('code', $voucherCode));
+        $criteria->addFilter(new EqualsFilter('merchantId', $merchant->getId()));
+        $criteria->addAssociation('orderLineItem.order.customer');
+
+        /** @var SoldVoucherEntity $voucher */
+        $voucher = $this->soldVoucherRepository->search($criteria, $context->getContext())->first();
+
+        $data = [
+            'status' => 'invalid',
+            'customer' => null
+        ];
+
+        if(!$voucher) {
+            return $data;
+        }
+
+        $data['customer'] = $voucher->getOrderLineItem()->getOrder()->getOrderCustomer();
+
+        $data['status'] = $voucher->getRedeemedAt() ? 'used' : 'valid';
+
+        return $data;
     }
 
     private function generateUniqueVoucherCode(string $merchantId, Context $context)
