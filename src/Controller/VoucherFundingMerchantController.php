@@ -56,5 +56,4 @@ class VoucherFundingMerchantController extends StorefrontController
         $this->voucherFundingService->redeemVoucher($voucherCode, $merchant, $context);
         return new JsonResponse(['code' => 200, 'Content' => 'Redeem voucher successfully']);
     }
-
 }

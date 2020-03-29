@@ -13,15 +13,18 @@
             <tag name="shopware.entity.extension"/>
         </service>
 
-
-        <service id="SwagVoucherFunding\Service\VoucherFundingMerchantService">
-            <argument type="service" id="sold_voucher.repository"/>
+        <service id="SwagVoucherFunding\Service\VoucherFundingEmailService">
             <argument type="service" id="system_config.repository"/>
-            <argument type="service" id="currency.repository"/>
             <argument type="service" id="Shopware\Core\Content\MailTemplate\Service\MessageFactory"/>
             <argument type="service" id="Shopware\Core\Content\MailTemplate\Service\MailSender"/>
             <argument type="service" id="Shopware\Core\Framework\Adapter\Twig\StringTemplateRenderer"/>
             <argument type="service" id="shopware.filesystem.public"/>
+        </service>
+
+        <service id="SwagVoucherFunding\Service\VoucherFundingMerchantService">
+            <argument type="service" id="sold_voucher.repository"/>
+            <argument type="service" id="currency.repository"/>
+            <argument type="service" id="SwagVoucherFunding\Service\VoucherFundingEmailService"/>
         </service>
 
         <service id="SwagVoucherFunding\Service\CartValidator">
@@ -31,6 +34,10 @@
 
         <service id="SwagVoucherFunding\Controller\VoucherFundingMerchantController" public="true">
             <argument id="SwagVoucherFunding\Service\VoucherFundingMerchantService" type="service"/>
+        </service>
+
+        <service id="SwagVoucherFunding\Controller\TemporaryTestController" public="true">
+            <argument id="SwagVoucherFunding\Service\VoucherFundingEmailService" type="service"/>
         </service>
 
         <service id="SwagVoucherFunding\Subscriber\OrderStateChangedSubscriber">
