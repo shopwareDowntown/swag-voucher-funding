@@ -137,6 +137,10 @@ class VoucherFundingEmailService
     private function renderVoucherAttachment(string $contentTemplate): string
     {
         $dompdf = new Dompdf();
+        $dompdf->set_paper('A4', 'landscape');
+        $dompdf->set_option('defaultFont', 'Arial');
+        $dompdf->set_option('enable_php', true);
+        $dompdf->set_option('enable_remote', true);
         $dompdf->loadHtml($contentTemplate);
         $dompdf->render();
         $output = $dompdf->output();

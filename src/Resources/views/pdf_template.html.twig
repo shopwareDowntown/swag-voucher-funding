@@ -1,20 +1,21 @@
 {% for voucher in vouchers %}
-<table style="width: 100%;line-height: 18px; margin-bottom: 100px; page-break-inside: avoid">
+<table style="width: 100%; line-height: 18px; margin-bottom: 40px; page-break-inside: avoid">
     <tbody>
         <tr>
             <td valign="top" style="background-color: #e6e7e9; text-align: center;">
-               <div style="padding-top: 80px; font-size: 46px;">GUTSCHEIN</div>
-               <div style="padding-top: 220px;color: #a79056;font-size: 110px;">{{ voucher.value.price }} {{ currency }}</div>
+               <div style="color: #3c3c3c; padding-top: 80px; font-size: 50px;">GUTSCHEIN</div>
+               <div style="margin: 80px 120px; padding: 140px 60px 80px; color: #a79056; font-size: 110px; border-radius: 30px; background-color: white;">{{ voucher.value.price }} {{ currency }}</div>
+               <img src="https://vuejs.org/images/shopware_ag.png" height="60px" style="margin-bottom: 40px" />
            </td>
-            <td style="width: 200px;padding: 30px;">
+            <td style="width: 240px; padding: 30px">
                <p><strong>Einlöseadresse</strong></p>
                <p>{{ merchant.publicCompanyName }}<br>{{ merchant.country }}, {{ merchant.city }}<br>{{ merchant.street }}</p>
-               <p><br>Telefon: {{ merchant.publicPhoneNumber }}<br>E-Mail: <a href="mailto:{{ merchant.publicEmail }}">{{ merchant.publicEmail }}</a><br>Web: <a href="{{ merchant.publicWebsite }}">{{ merchant.publicWebsite }}</a></p>
-               <p><br><strong>Gültigkeit</strong><br>Sequatat ecaborrum ipid quamusa pelique re, offici beroviti dolupta tenisim latiis es offici simodit, quodit, incte quo bea quaes es simodit. Dieser Gutschein ist ausgestellt auf den Namen<br>{{ customerName }}</p>
+               <p>Telefon: {{ merchant.publicPhoneNumber }}<br>E-Mail: <a href="mailto:{{ merchant.publicEmail }}">{{ merchant.publicEmail }}</a><br>Web: <a href="{{ merchant.publicWebsite }}">{{ merchant.publicWebsite }}</a></p>
+               <p><br><strong>Ausgestellt auf</strong><p>
+               <p>{{ customerName }}</p>
                <p><br><strong>Ausstellungsdatum</strong></p>
                <p>{{ today }}</p>
-               <p>&nbsp;</p>
-               <p><strong>Gutscheinnummer</strong></p>
+               <p><br><strong>Gutscheinnummer</strong></p>
                <p>{{ voucher.code }}</p>
             </td>
        </tr>
@@ -22,4 +23,4 @@
    </table>
 {% endfor %}
 
-<style>strong {color: #a79056;}</style>
+<style>p {color: #3c3c3c; font-size: 14px} strong {color: #a79056; font-size: 18px} a {color: #189eff; text-decoration: none}</style>
