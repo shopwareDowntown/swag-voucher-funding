@@ -156,6 +156,32 @@ class VoucherFundingMerchantService
         ]], $context->getContext());
     }
 
+    public function getVoucherStatus(string $voucherCode, MerchantEntity $merchant, SalesChannelContext $context): array
+    {
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('code', $voucherCode));
+        $criteria->addFilter(new EqualsFilter('merchantId', $merchant->getId()));
+        $criteria->addAssociation('orderLineItem.order.customer');
+
+        /** @var SoldVoucherEntity $voucher */
+        $voucher = $this->soldVoucherRepository->search($criteria, $context->getContext())->first();
+
+        $data = [
+            'status' => 'invalid',
+            'customer' => null
+        ];
+
+        if(!$voucher) {
+            return $data;
+        }
+
+        $data['customer'] = $voucher->getOrderLineItem()->getOrder()->getOrderCustomer();
+
+        $data['status'] = $voucher->getRedeemedAt() ? 'used' : 'valid';
+
+        return $data;
+    }
+
     private function sendEmailCustomer(
         array $vouchers,
         MerchantEntity $merchant,
