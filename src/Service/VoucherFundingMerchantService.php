@@ -2,7 +2,11 @@
 
 namespace SwagVoucherFunding\Service;
 
+use League\Flysystem\FileNotFoundException;
+use League\Flysystem\FilesystemInterface;
 use Shopware\Core\Checkout\Cart\Price\Struct\AbsolutePriceDefinition;
+use Shopware\Core\Checkout\Order\Aggregate\OrderCustomer\OrderCustomerEntity;
+use Shopware\Core\Checkout\Order\OrderEntity;
 use Shopware\Core\Content\MailTemplate\Service\MailSender;
 use Shopware\Core\Content\MailTemplate\Service\MessageFactory;
 use Shopware\Core\Defaults;
@@ -15,10 +19,12 @@ use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\ContainsFilter;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Shopware\Core\Framework\Util\Random;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
+use Shopware\Core\System\Currency\CurrencyEntity;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Dompdf\Dompdf;
 use Shopware\Core\Framework\Uuid\Uuid;
 use Shopware\Core\Framework\Validation\DataBag\DataBag;
+use Shopware\Core\System\SalesChannel\SalesChannelEntity;
 use Shopware\Core\System\SystemConfig\SystemConfigEntity;
 use Shopware\Production\Merchants\Content\Merchant\MerchantEntity;
 use SwagVoucherFunding\Checkout\SoldVoucher\SoldVoucherEntity;
@@ -38,11 +44,6 @@ class VoucherFundingMerchantService
     private $systemConfigRepository;
 
     /**
-     * @var EntityRepositoryInterface
-     */
-    private $merchantRepository;
-
-    /**
      * @var MessageFactory
      */
     private $messageFactory;
@@ -56,39 +57,58 @@ class VoucherFundingMerchantService
      * @var StringTemplateRenderer
      */
     private $templateRenderer;
+    /**
+     * @var EntityRepositoryInterface
+     */
+    private $currencyRepository;
+    /**
+     * @var FilesystemInterface
+     */
+    private $publicFilesystem;
 
     public function __construct(
         EntityRepositoryInterface $soldVoucherRepository,
         EntityRepositoryInterface $systemConfigRepository,
+        EntityRepositoryInterface $currencyRepository,
         MessageFactory $messageFactory,
         MailSender $mailSender,
-        StringTemplateRenderer $templateRenderer
+        StringTemplateRenderer $templateRenderer,
+        FilesystemInterface $publicFilesystem
     ) {
         $this->soldVoucherRepository = $soldVoucherRepository;
         $this->systemConfigRepository = $systemConfigRepository;
+        $this->currencyRepository = $currencyRepository;
         $this->messageFactory = $messageFactory;
         $this->mailSender = $mailSender;
         $this->templateRenderer = $templateRenderer;
+        $this->publicFilesystem = $publicFilesystem;
     }
 
     public function loadSoldVouchers(string $merchantId, SalesChannelContext $context) : array
     {
-        $criteria = new Criteria([$merchantId]);
-        $criteria->addAssociation('merchants');
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('merchantId', $merchantId));
 
-        $soldVouchers[] = $this->soldVoucherRepository->search($criteria, $context->getContext());
-
-        return $soldVouchers;
+        return $this->soldVoucherRepository->search($criteria, $context->getContext())->getElements();
     }
 
     /**
-     * @param  string  $merchantId
+     * @param  MerchantEntity  $merchant
+     * @param  OrderEntity $orderEntity
      * @param  EntityCollection  $lineItemCollection
      * @param  Context  $context
      */
-    public function createSoldVoucher(string $merchantId, EntityCollection $lineItemCollection, Context $context) : void
+    public function createSoldVoucher(
+        MerchantEntity $merchant,
+        OrderEntity $orderEntity,
+        EntityCollection $lineItemCollection,
+        Context $context
+    ) : void
     {
         $vouchers = [];
+        $merchantId = $merchant->getId();
+        $currencyId = $orderEntity->getCurrencyId();
+        $currency = $this->currencyRepository->search(new Criteria([$currencyId]), $context)->get($currencyId);
 
         /** @var OrderLineItemEntity $lineItemEntity */
         foreach ($lineItemCollection as $lineItemEntity) {
@@ -113,6 +133,7 @@ class VoucherFundingMerchantService
         }
 
         $this->soldVoucherRepository->create($vouchers, $context);
+        $this->sendEmailCustomer($vouchers, $merchant, $orderEntity->getOrderCustomer(), $currency, $context);
     }
 
     public function redeemVoucher(string $voucherCode, MerchantEntity $merchant, SalesChannelContext $context) : void
@@ -135,33 +156,47 @@ class VoucherFundingMerchantService
         ]], $context->getContext());
     }
 
-    private function sendEmailCustomer(MerchantEntity $merchant, SalesChannelContext $context)
+    private function sendEmailCustomer(
+        array $vouchers,
+        MerchantEntity $merchant,
+        OrderCustomerEntity $orderCustomer,
+        CurrencyEntity $currencyEntity,
+        Context $context)
     {
-        // TODO set `price` and `code` from SoldVoucher
-        $data = new DataBag();
-        $data->set('price', rand(100, 300) . '€');
-        $data->set('today', date("d.m.Y"));
-        $data->set('code', self::generateVoucherCode(10));
-        $data->set('subject', $this->getSubjectTemplate($context));
-        $data->set('sendFrom', $merchant->getEmail());
-        $data->set('sendName', $this->getSenderNameTemplate($context));
-        $data->set('sender', [$data->get('sendFrom') => $data->get('sendName')]);
+        $customerName = sprintf('%s. %s %s',
+            $orderCustomer->getSalutation()->getDisplayName(),
+            $orderCustomer->getFirstName(),
+            $orderCustomer->getLastName()
+        );
 
-        // TODO update buyer recipients here
+        $data = new DataBag();
+        $data->set('vouchers', $vouchers);
+        $data->set('today', date("d.m.Y"));
+        $data->set('currency', $currencyEntity->getSymbol());
+        $data->set('merchant', $merchant);
+        $data->set('subject', $this->getSubjectTemplate($merchant, $context));
+        $data->set('customerName', $customerName);
+        $data->set('sendFrom', $merchant->getEmail());
+        $data->set('sendName', $this->getSenderNameTemplate($merchant, $context));
+        $data->set('sender', [$data->get('sendFrom') => $data->get('sendName')]);
         $data->set(
             'recipients', [
-                $context->getCustomer()->getEmail() => $context->getCustomer()->getFirstName() . ' ' . $context->getCustomer()->getLastName()
+                $orderCustomer->getEmail() => $customerName
             ]
         );
 
-        $contentTemplate = $this->getContentTemplate($data->all(), $context);
+        $contentTemplate = $this->getContentTemplate($data->all(), $merchant, $context);
 
         // Use array here for support a mail can have many voucher
         $voucherUrls[] = $this->renderVoucherAttachment($contentTemplate);
         $this->sendMail($data, $contentTemplate, $voucherUrls);
 
         foreach ($voucherUrls as $voucherUrl) {
-            unlink($voucherUrl);
+            try {
+                $this->publicFilesystem->delete($voucherUrl);
+            } catch (FileNotFoundException $e) {
+                // TODO: Handle FileNotFound
+            }
         }
     }
 
@@ -190,27 +225,29 @@ class VoucherFundingMerchantService
         return mb_strtoupper(Random::getAlphanumericString($length));
     }
 
-    private function getSubjectTemplate(SalesChannelContext $context): string
+    private function getSubjectTemplate(MerchantEntity $merchant, Context $context): string
     {
-        $config = $this->getSystemConfig('subject', $context);
+        $config = $this->getSystemConfig('subject', $merchant->getSalesChannelId(), $context);
 
-        $templateData['salesChannel'] = $context->getSalesChannel();
-        return $this->templateRenderer->render($config, $templateData, $context->getContext());
+        $templateData['merchant'] = $merchant;
+
+        return $this->templateRenderer->render($config, $templateData, $context);
     }
 
-    private function getSenderNameTemplate(SalesChannelContext $context): string
+    private function getSenderNameTemplate(MerchantEntity $merchant, Context $context): string
     {
-        $config = $this->getSystemConfig('senderName', $context);
+        $config = $this->getSystemConfig('senderName', $merchant->getSalesChannelId(), $context);
 
-        $templateData['salesChannel'] = $context->getSalesChannel();
-        return $this->templateRenderer->render($config, $templateData, $context->getContext());
+        $templateData['merchant'] = $merchant;
+
+        return $this->templateRenderer->render($config, $templateData, $context);
     }
 
-    private function getContentTemplate(array $data, SalesChannelContext $context): string
+    private function getContentTemplate(array $data, MerchantEntity $merchant, Context $context): string
     {
-        $config = $this->getSystemConfig('pdfTemplate', $context);
+        $config = $this->getSystemConfig('pdfTemplate', $merchant->getSalesChannelId(), $context);
 
-        return $this->templateRenderer->render($config, $data, $context->getContext());
+        return $this->templateRenderer->render($config, $data, $context);
     }
 
     private function renderVoucherAttachment(string $contentTemplate): string
@@ -219,25 +256,25 @@ class VoucherFundingMerchantService
         $dompdf->loadHtml($contentTemplate);
         $dompdf->render();
         $output = $dompdf->output();
-        $voucherPath = self::TEMP_DIR . '/' . Uuid::randomHex() . '.pdf';
-        $voucherUrl = __DIR__ . '/../../../../../public/' . $voucherPath;
-        file_put_contents($voucherUrl, $output);
+        $voucherPath = self::TEMP_DIR . DIRECTORY_SEPARATOR . Uuid::randomHex() . '.pdf';
+
+        $this->publicFilesystem->put($voucherPath, $output);
 
         return $voucherPath;
     }
 
-    private function getSystemConfig(string $value, SalesChannelContext $context): String
+    private function getSystemConfig(string $value, string $salesChannelId, Context $context): String
     {
         $criteria = new Criteria();
         $criteria->addFilter(new ContainsFilter('configurationKey', 'SwagVoucherFunding.config.' . $value));
 
-        $systemConfigs = $this->systemConfigRepository->search($criteria, $context->getContext())->getEntities();
+        $systemConfigs = $this->systemConfigRepository->search($criteria, $context)->getEntities();
         if (empty($systemConfigs)) {
             throw new \InvalidArgumentException('Error');
         }
 
-        $systemConfigs->filter(function (SystemConfigEntity $systemConfig) use ($context) {
-            return $systemConfig->getSalesChannelId() === $context->getSalesChannel()->getId();
+        $systemConfigs->filter(function (SystemConfigEntity $systemConfig) use ($salesChannelId) {
+            return $systemConfig->getSalesChannelId() === $salesChannelId;
         });
 
         if (empty($systemConfig)) {

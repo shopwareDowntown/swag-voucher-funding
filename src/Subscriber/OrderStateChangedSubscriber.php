@@ -61,7 +61,7 @@ class OrderStateChangedSubscriber implements EventSubscriberInterface
 
         $merchant = $this->fetchMerchantFromSalesChannel($event->getSalesChannelId(), $context);
 
-        $this->voucherFundingService->createSoldVoucher($merchant->getId(), $voucherLineItems->getEntities(), $context);
+        $this->voucherFundingService->createSoldVoucher($merchant, $order, $voucherLineItems->getEntities(), $context);
     }
 
     private function getVoucherLineItemsOfOrder(string $orderId, Context $context): EntitySearchResult

@@ -1,0 +1,25 @@
+{% for voucher in vouchers %}
+<table style="width: 100%;line-height: 18px; margin-bottom: 100px; page-break-inside: avoid">
+    <tbody>
+        <tr>
+            <td valign="top" style="background-color: #e6e7e9; text-align: center;">
+               <div style="padding-top: 80px; font-size: 46px;">GUTSCHEIN</div>
+               <div style="padding-top: 220px;color: #a79056;font-size: 110px;">{{ voucher.value.price }} {{ currency }}</div>
+           </td>
+            <td style="width: 200px;padding: 30px;">
+               <p><strong>Einlöseadresse</strong></p>
+               <p>{{ merchant.publicCompanyName }}<br>{{ merchant.country }}, {{ merchant.city }}<br>{{ merchant.street }}</p>
+               <p><br>Telefon: {{ merchant.publicPhoneNumber }}<br>E-Mail: <a href="mailto:{{ merchant.publicEmail }}">{{ merchant.publicEmail }}</a><br>Web: <a href="{{ merchant.publicWebsite }}">{{ merchant.publicWebsite }}</a></p>
+               <p><br><strong>Gültigkeit</strong><br>Sequatat ecaborrum ipid quamusa pelique re, offici beroviti dolupta tenisim latiis es offici simodit, quodit, incte quo bea quaes es simodit. Dieser Gutschein ist ausgestellt auf den Namen<br>{{ customerName }}</p>
+               <p><br><strong>Ausstellungsdatum</strong></p>
+               <p>{{ today }}</p>
+               <p>&nbsp;</p>
+               <p><strong>Gutscheinnummer</strong></p>
+               <p>{{ voucher.code }}</p>
+            </td>
+       </tr>
+   </tbody>
+   </table>
+{% endfor %}
+
+<style>strong {color: #a79056;}</style>
