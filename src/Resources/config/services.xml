@@ -35,10 +35,6 @@
             <argument id="SwagVoucherFunding\Service\VoucherFundingMerchantService" type="service"/>
         </service>
 
-        <service id="SwagVoucherFunding\Controller\TemporaryTestController" public="true">
-            <argument id="SwagVoucherFunding\Service\VoucherFundingEmailService" type="service"/>
-        </service>
-
         <service id="SwagVoucherFunding\Subscriber\OrderStateChangedSubscriber">
             <argument id="SwagVoucherFunding\Service\VoucherFundingMerchantService" type="service" />
             <argument type="service" id="order_line_item.repository"/>
