@@ -40,7 +40,7 @@ class VoucherFundingMerchantController extends StorefrontController
     }
 
     /**
-     * @Route("/merchant-api/v{version}/voucher-funding/voucher/redeem", name="merchant-api.action.voucher-funding.voucher.redeem", methods={"POST"})
+     * @Route("/merchant-api/v{version}/voucher-funding/voucher/redeem", name="merchant-api.action.voucher-funding.voucher.redeem", methods={"POST"}, defaults={"csrf_protected"=false})
      * @throws CustomerNotLoggedInException
      */
     public function redeemVoucher(Request $request, SalesChannelContext $context): JsonResponse
