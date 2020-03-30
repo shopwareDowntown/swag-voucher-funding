@@ -3,8 +3,6 @@
 namespace SwagVoucherFunding\Controller;
 
 use Faker\Factory;
-use Faker\Generator;
-use Faker\Guesser\Name;
 use Shopware\Core\Checkout\Cart\Exception\CustomerNotLoggedInException;
 use Shopware\Core\Checkout\Cart\Price\Struct\AbsolutePriceDefinition;
 use Shopware\Core\Checkout\Order\Aggregate\OrderCustomer\OrderCustomerEntity;
@@ -20,9 +18,7 @@ use Shopware\Production\Merchants\Content\Merchant\MerchantEntity;
 use Shopware\Production\Merchants\Content\Merchant\SalesChannelContextExtension;
 use Shopware\Storefront\Controller\StorefrontController;
 use SwagVoucherFunding\Service\VoucherFundingEmailService;
-use SwagVoucherFunding\Service\VoucherFundingMerchantService;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 
 /**
@@ -55,7 +51,7 @@ class TemporaryTestController extends StorefrontController
         $merchant = $this->createFakeMerchant($context->getSalesChannel());
         $orderCustomer = $this->createFakeCustomer();
         $currency = $this->createFakeCurrency();
-        
+
         $this->voucherFundingEmailService->sendEmailCustomer($vouchers, $merchant, $orderCustomer, $currency, $context->getContext());
 
         return new JsonResponse([]);
