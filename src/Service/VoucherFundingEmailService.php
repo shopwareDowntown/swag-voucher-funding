@@ -61,7 +61,7 @@ class VoucherFundingEmailService
         Context $context
     ) : void
     {
-        $customerName = sprintf('%s. %s %s',
+        $customerName = sprintf('%s %s %s',
             $orderCustomer->getSalutation()->getDisplayName(),
             $orderCustomer->getFirstName(),
             $orderCustomer->getLastName()
@@ -99,8 +99,6 @@ class VoucherFundingEmailService
 
         $contentTemplate = $this->getContentTemplate($templateData, $merchant, $context);
         $data->set('contentHtml', $contentTemplate);
-
-        // TODO: Implement content plain
         $data->set('contentPlain', sprintf('Thank you %s! Your purchased vouchers is included in the attachments!', $customerName));
 
         $voucherPdf = $this->renderVoucherAttachment($contentTemplate);
