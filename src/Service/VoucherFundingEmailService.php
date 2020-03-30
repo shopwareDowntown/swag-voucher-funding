@@ -2,10 +2,9 @@
 
 namespace SwagVoucherFunding\Service;
 
-use League\Flysystem\FilesystemInterface;
+use Dompdf\Options;
 use Shopware\Core\Checkout\Order\Aggregate\OrderCustomer\OrderCustomerEntity;
 use Shopware\Core\Content\MailTemplate\Service\MailService;
-use Shopware\Core\Content\MailTemplate\Service\MessageFactory;
 use Shopware\Core\Framework\Adapter\Twig\StringTemplateRenderer;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
@@ -14,6 +13,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
 use Shopware\Core\System\Currency\CurrencyEntity;
 use Dompdf\Dompdf;
 use Shopware\Core\Framework\Validation\DataBag\DataBag;
+use Shopware\Core\System\Currency\CurrencyFormatter;
 use Shopware\Core\System\SystemConfig\SystemConfigEntity;
 use Shopware\Production\Merchants\Content\Merchant\MerchantEntity;
 
@@ -27,11 +27,6 @@ class VoucherFundingEmailService
     private $systemConfigRepository;
 
     /**
-     * @var MessageFactory
-     */
-    private $messageFactory;
-
-    /**
      * @var MailService
      */
     private $mailService;
@@ -42,18 +37,20 @@ class VoucherFundingEmailService
     private $templateRenderer;
 
     /**
-     * @var FilesystemInterface
+     * @var CurrencyFormatter
      */
-    private $publicFilesystem;
+    private $currencyFormatter;
 
     public function __construct(
         EntityRepositoryInterface $systemConfigRepository,
         MailService $mailService,
-        StringTemplateRenderer $templateRenderer
+        StringTemplateRenderer $templateRenderer,
+        CurrencyFormatter $currencyFormatter
     ) {
         $this->systemConfigRepository = $systemConfigRepository;
         $this->mailService = $mailService;
         $this->templateRenderer = $templateRenderer;
+        $this->currencyFormatter = $currencyFormatter;
     }
 
     public function sendEmailCustomer(
@@ -70,12 +67,24 @@ class VoucherFundingEmailService
             $orderCustomer->getLastName()
         );
 
+        $currencyVouchers = [];
+        foreach ($vouchers as $voucher) {
+            $currencyVoucher['code'] = $voucher['code'];
+            $currencyVoucher['price'] = $this->currencyFormatter->formatCurrencyByLanguage(
+                $voucher['value']->getPrice(),
+                $currencyEntity->getIsoCode(),
+                $context->getLanguageId(),
+                $context
+            );
+            $currencyVouchers[] = $currencyVoucher;
+        }
+
+
         $templateData = [
             'merchant' => $merchant,
             'customerName' => $customerName,
-            'vouchers' => $vouchers,
-            'today' => date("d.m.Y"),
-            'currency' => $currencyEntity->getSymbol()
+            'vouchers' => $currencyVouchers,
+            'today' => date("d.m.Y")
         ];
 
         $data = new DataBag();
@@ -115,13 +124,17 @@ class VoucherFundingEmailService
 
     private function renderVoucherAttachment(string $contentTemplate): string
     {
+        $options = new Options();
+        $options->setDefaultFont('Arial');
+        $options->setIsPhpEnabled(true);
+        $options->setIsRemoteEnabled(true);
+
         $dompdf = new Dompdf();
-        $dompdf->set_paper('A4', 'landscape');
-        $dompdf->set_option('defaultFont', 'Arial');
-        $dompdf->set_option('enable_php', true);
-        $dompdf->set_option('enable_remote', true);
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->setOptions($options);
         $dompdf->loadHtml($contentTemplate);
         $dompdf->render();
+
         return $dompdf->output();
     }
 

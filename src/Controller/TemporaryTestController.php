@@ -6,6 +6,7 @@ use Faker\Factory;
 use Faker\Generator;
 use Faker\Guesser\Name;
 use Shopware\Core\Checkout\Cart\Exception\CustomerNotLoggedInException;
+use Shopware\Core\Checkout\Cart\Price\Struct\AbsolutePriceDefinition;
 use Shopware\Core\Checkout\Order\Aggregate\OrderCustomer\OrderCustomerEntity;
 use Shopware\Core\Content\MailTemplate\Service\MailService;
 use Shopware\Core\Framework\Routing\Annotation\RouteScope;
@@ -67,12 +68,11 @@ class TemporaryTestController extends StorefrontController
         $voucherNum = rand(1, 5);
 
         for($i = 0; $i < $voucherNum; $i++) {
+            $voucherValue = new AbsolutePriceDefinition(rand(100, 1000), 2);
             $vouchers[] = [
                 'code' => $this->randomVoucherCode(),
                 'name' => 'This is test voucher ' . ($i + 1),
-                'value' => [
-                    'price' => rand(100, 1000)
-                ]
+                'value' => $voucherValue
             ];
         }
 
@@ -116,6 +116,7 @@ class TemporaryTestController extends StorefrontController
     {
         $currency = new CurrencyEntity();
         $currency->setSymbol("€");
+        $currency->setIsoCode("EUR");
         return $currency;
     }
 
