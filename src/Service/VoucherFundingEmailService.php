@@ -2,10 +2,9 @@
 
 namespace SwagVoucherFunding\Service;
 
-use League\Flysystem\FileNotFoundException;
 use League\Flysystem\FilesystemInterface;
 use Shopware\Core\Checkout\Order\Aggregate\OrderCustomer\OrderCustomerEntity;
-use Shopware\Core\Content\MailTemplate\Service\MailSender;
+use Shopware\Core\Content\MailTemplate\Service\MailService;
 use Shopware\Core\Content\MailTemplate\Service\MessageFactory;
 use Shopware\Core\Framework\Adapter\Twig\StringTemplateRenderer;
 use Shopware\Core\Framework\Context;
@@ -14,14 +13,13 @@ use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\ContainsFilter;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
 use Shopware\Core\System\Currency\CurrencyEntity;
 use Dompdf\Dompdf;
-use Shopware\Core\Framework\Uuid\Uuid;
 use Shopware\Core\Framework\Validation\DataBag\DataBag;
 use Shopware\Core\System\SystemConfig\SystemConfigEntity;
 use Shopware\Production\Merchants\Content\Merchant\MerchantEntity;
 
 class VoucherFundingEmailService
 {
-    const TEMP_DIR = 'bundles/storefront';
+    const VOUCHER_PDF_NAME = 'downtown-gutschein.pdf';
 
     /**
      * @var EntityRepositoryInterface
@@ -34,9 +32,9 @@ class VoucherFundingEmailService
     private $messageFactory;
 
     /**
-     * @var MailSender
+     * @var MailService
      */
-    private $mailSender;
+    private $mailService;
 
     /**
      * @var StringTemplateRenderer
@@ -50,16 +48,12 @@ class VoucherFundingEmailService
 
     public function __construct(
         EntityRepositoryInterface $systemConfigRepository,
-        MessageFactory $messageFactory,
-        MailSender $mailSender,
-        StringTemplateRenderer $templateRenderer,
-        FilesystemInterface $publicFilesystem
+        MailService $mailService,
+        StringTemplateRenderer $templateRenderer
     ) {
         $this->systemConfigRepository = $systemConfigRepository;
-        $this->messageFactory = $messageFactory;
-        $this->mailSender = $mailSender;
+        $this->mailService = $mailService;
         $this->templateRenderer = $templateRenderer;
-        $this->publicFilesystem = $publicFilesystem;
     }
 
     public function sendEmailCustomer(
@@ -68,7 +62,7 @@ class VoucherFundingEmailService
         OrderCustomerEntity $orderCustomer,
         CurrencyEntity $currencyEntity,
         Context $context
-    ) : string
+    ) : void
     {
         $customerName = sprintf('%s. %s %s',
             $orderCustomer->getSalutation()->getDisplayName(),
@@ -76,56 +70,41 @@ class VoucherFundingEmailService
             $orderCustomer->getLastName()
         );
 
+        $templateData = [
+            'merchant' => $merchant,
+            'customerName' => $customerName,
+            'vouchers' => $vouchers,
+            'today' => date("d.m.Y"),
+            'currency' => $currencyEntity->getSymbol()
+        ];
+
         $data = new DataBag();
-        $data->set('vouchers', $vouchers);
-        $data->set('today', date("d.m.Y"));
-        $data->set('currency', $currencyEntity->getSymbol());
-        $data->set('merchant', $merchant);
-        $data->set('subject', $this->getSubjectTemplate($merchant, $context));
-        $data->set('customerName', $customerName);
-        $data->set('sendFrom', $merchant->getEmail());
-        $data->set('sendName', $this->getSenderNameTemplate($merchant, $context));
-        $data->set('sender', [$data->get('sendFrom') => $data->get('sendName')]);
+        $data->set('salesChannelId', $merchant->getSalesChannelId());
+        $data->set('subject', $this->getSystemConfig('subject', $merchant->getSalesChannelId(), $context));
+        $data->set('senderName', $this->getSystemConfig('senderName', $merchant->getSalesChannelId(), $context));
         $data->set(
             'recipients', [
                 $orderCustomer->getEmail() => $customerName
             ]
         );
 
-        $contentTemplate = $this->getContentTemplate($data->all(), $merchant, $context);
+        $contentTemplate = $this->getContentTemplate($templateData, $merchant, $context);
+        $data->set('contentHtml', $contentTemplate);
 
-        // Use array here for support a mail can have many voucher
-        $voucherUrls[] = $this->renderVoucherAttachment($contentTemplate);
-        $this->sendMail($data, $contentTemplate, $voucherUrls);
+        // TODO: Implement content plain
+        $data->set('contentPlain', sprintf('Thank you %s! Your purchased vouchers is included in the attachments!', $customerName));
 
-        foreach ($voucherUrls as $voucherUrl) {
-            try {
-                $this->publicFilesystem->delete($voucherUrl);
-            } catch (FileNotFoundException $e) {
-                // TODO: Handle FileNotFound
-            }
-        }
+        $voucherPdf = $this->renderVoucherAttachment($contentTemplate);
 
-        return $contentTemplate;
+        $data->set('binAttachments', [[
+            'content' => $voucherPdf,
+            'fileName' => self::VOUCHER_PDF_NAME,
+            'mimeType' => 'application/pdf',
+        ]]);
+
+        $this->mailService->send($data->all(), $context, $templateData);
     }
 
-    private function getSubjectTemplate(MerchantEntity $merchant, Context $context): string
-    {
-        $config = $this->getSystemConfig('subject', $merchant->getSalesChannelId(), $context);
-
-        $templateData['merchant'] = $merchant;
-
-        return $this->templateRenderer->render($config, $templateData, $context);
-    }
-
-    private function getSenderNameTemplate(MerchantEntity $merchant, Context $context): string
-    {
-        $config = $this->getSystemConfig('senderName', $merchant->getSalesChannelId(), $context);
-
-        $templateData['merchant'] = $merchant;
-
-        return $this->templateRenderer->render($config, $templateData, $context);
-    }
 
     private function getContentTemplate(array $data, MerchantEntity $merchant, Context $context): string
     {
@@ -143,12 +122,7 @@ class VoucherFundingEmailService
         $dompdf->set_option('enable_remote', true);
         $dompdf->loadHtml($contentTemplate);
         $dompdf->render();
-        $output = $dompdf->output();
-        $voucherPath = self::TEMP_DIR . DIRECTORY_SEPARATOR . Uuid::randomHex() . '.pdf';
-
-        $this->publicFilesystem->put($voucherPath, $output);
-
-        return $voucherPath;
+        return $dompdf->output();
     }
 
     private function getSystemConfig(string $value, string $salesChannelId, Context $context): String
@@ -170,26 +144,5 @@ class VoucherFundingEmailService
         }
 
         return $systemConfig->getConfigurationValue();
-    }
-
-    private function sendMail(DataBag $data, string $contentTemplate, array $voucherUrls): void
-    {
-        $contents = [
-            'text/html' => $contentTemplate,
-            'text/plain' => 'Hello' // TODO update content plain later
-        ];
-
-        $binAttachments = $data->get('binAttachments') ?? null;
-
-        $message = $this->messageFactory->createMessage(
-            $data->get('subject'),
-            $data->get('sender'),
-            $data->get('recipients'),
-            $contents,
-            $voucherUrls,
-            $binAttachments
-        );
-
-        $this->mailSender->send($message);
     }
 }

@@ -7,8 +7,10 @@ use Faker\Generator;
 use Faker\Guesser\Name;
 use Shopware\Core\Checkout\Cart\Exception\CustomerNotLoggedInException;
 use Shopware\Core\Checkout\Order\Aggregate\OrderCustomer\OrderCustomerEntity;
+use Shopware\Core\Content\MailTemplate\Service\MailService;
 use Shopware\Core\Framework\Routing\Annotation\RouteScope;
 use Shopware\Core\Framework\Util\Random;
+use Shopware\Core\Framework\Validation\DataBag\DataBag;
 use Shopware\Core\System\Currency\CurrencyEntity;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Shopware\Core\System\SalesChannel\SalesChannelEntity;
@@ -28,6 +30,10 @@ use Symfony\Component\Routing\Annotation\Route;
 class TemporaryTestController extends StorefrontController
 {
     private $voucherFundingEmailService;
+    /**
+     * @var MailService
+     */
+    private $mailService;
 
     public function __construct(
         VoucherFundingEmailService $voucherFundingEmailService
@@ -48,12 +54,10 @@ class TemporaryTestController extends StorefrontController
         $merchant = $this->createFakeMerchant($context->getSalesChannel());
         $orderCustomer = $this->createFakeCustomer();
         $currency = $this->createFakeCurrency();
+        
+        $this->voucherFundingEmailService->sendEmailCustomer($vouchers, $merchant, $orderCustomer, $currency, $context->getContext());
 
-
-        $content = $this->voucherFundingEmailService->sendEmailCustomer($vouchers, $merchant, $orderCustomer, $currency, $context->getContext());
-
-        print_r($content); die();
-        return $content;
+        return new JsonResponse([]);
     }
 
     private function createFakeVouchers() : array
