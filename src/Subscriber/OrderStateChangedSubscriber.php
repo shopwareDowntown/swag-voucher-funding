@@ -43,11 +43,11 @@ class OrderStateChangedSubscriber implements EventSubscriberInterface
     public static function getSubscribedEvents()
     {
         return [
-            'state_enter.order.state.completed' => 'orderStateCompleted',
+            'state_enter.order_transaction.state.paid' => 'orderTransactionStatePaid',
         ];
     }
 
-    public function orderStateCompleted(OrderStateMachineStateChangeEvent $event) : void
+    public function orderTransactionStatePaid(OrderStateMachineStateChangeEvent $event) : void
     {
         $order = $event->getOrder();
 
