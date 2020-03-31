@@ -39,14 +39,14 @@ class SwagVoucherFunding extends Plugin
             [
                 'id' => Uuid::randomHex(),
                 'configurationKey' => $this->getName() . '.config.pdfTemplate',
-                'configurationValue' => $this->pdfTemplate()
+                'configurationValue' => $this->getPdfTemplate()
             ]
         ], $context);
 
         $systemConfigRepository->create([
             [
                 'id' => Uuid::randomHex(),
-                'configurationKey' => $this->getName() . '.config.subject',
+                'configurationKey' => $this->getName() . '.config.customerSubject',
                 'configurationValue' => 'Your voucher with {{ merchant.publicCompanyName }}'
             ]
         ], $context);
@@ -54,8 +54,56 @@ class SwagVoucherFunding extends Plugin
         $systemConfigRepository->create([
             [
                 'id' => Uuid::randomHex(),
-                'configurationKey' => $this->getName() . '.config.senderName',
+                'configurationKey' => $this->getName() . '.config.customerSenderName',
                 'configurationValue' => '{{ merchant.publicCompanyName }}'
+            ]
+        ], $context);
+
+        $systemConfigRepository->create([
+            [
+                'id' => Uuid::randomHex(),
+                'configurationKey' => $this->getName() . '.config.customerHtmlTemplate',
+                'configurationValue' => $this->getCustomerMailHTMLTemplate()
+            ]
+        ], $context);
+
+        $systemConfigRepository->create([
+            [
+                'id' => Uuid::randomHex(),
+                'configurationKey' => $this->getName() . '.config.customerPlainTemplate',
+                'configurationValue' => $this->getCustomerMailPlainTemplate()
+            ]
+        ], $context);
+
+        $systemConfigRepository->create([
+            [
+                'id' => Uuid::randomHex(),
+                'configurationKey' => $this->getName() . '.config.merchantSubject',
+                'configurationValue' => 'We have just issued a voucher for your customer'
+            ]
+        ], $context);
+
+        $systemConfigRepository->create([
+            [
+                'id' => Uuid::randomHex(),
+                'configurationKey' => $this->getName() . '.config.merchantSenderName',
+                'configurationValue' => 'Shopware AG'
+            ]
+        ], $context);
+
+        $systemConfigRepository->create([
+            [
+                'id' => Uuid::randomHex(),
+                'configurationKey' => $this->getName() . '.config.merchantHtmlTemplate',
+                'configurationValue' => $this->getMerchantMailHTMLTemplate()
+            ]
+        ], $context);
+
+        $systemConfigRepository->create([
+            [
+                'id' => Uuid::randomHex(),
+                'configurationKey' => $this->getName() . '.config.merchantPlainTemplate',
+                'configurationValue' => $this->getMerchantMailPlainTemplate()
             ]
         ], $context);
     }
@@ -78,8 +126,28 @@ class SwagVoucherFunding extends Plugin
         $systemConfigRepository->delete($ids, $context);
     }
 
-    private function pdfTemplate(): string
+    private function getPdfTemplate(): string
     {
-        return file_get_contents(__DIR__ . '/Resources/views/pdf_template.html.twig');
+        return file_get_contents(__DIR__ . '/Resources/views/pdf-template.html.twig');
+    }
+
+    private function getcustomerMailHTMLTemplate(): string
+    {
+        return file_get_contents(__DIR__ . '/Resources/views/customer-mail-html-template.html.twig');
+    }
+
+    private function getCustomerMailPlainTemplate(): string
+    {
+        return file_get_contents(__DIR__ . '/Resources/views/customer-mail-plain-template.html.twig');
+    }
+
+    private function getMerchantMailHTMLTemplate(): string
+    {
+        return file_get_contents(__DIR__ . '/Resources/views/merchant-mail-html-template.html.twig');
+    }
+
+    private function getMerchantMailPlainTemplate(): string
+    {
+        return file_get_contents(__DIR__ . '/Resources/views/merchant-mail-plain-template.html.twig');
     }
 }

@@ -3,14 +3,14 @@
 namespace SwagVoucherFunding\Subscriber;
 
 use Shopware\Core\Checkout\Cart\LineItem\LineItem;
-use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity;
+use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemCollection;
 use Shopware\Core\Checkout\Order\Event\OrderStateMachineStateChangeEvent;
+use Shopware\Core\Checkout\Order\OrderEntity;
 use Shopware\Core\Framework\Api\Exception\InvalidSalesChannelIdException;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
 use Shopware\Core\Framework\DataAbstractionLayer\Exception\InconsistentCriteriaIdsException;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
-use Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Shopware\Production\Merchants\Content\Merchant\MerchantEntity;
 use SwagVoucherFunding\Service\VoucherFundingMerchantService;
@@ -19,10 +19,11 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 class OrderStateChangedSubscriber implements EventSubscriberInterface
 {
     private $voucherFundingService;
+
     /**
      * @var EntityRepositoryInterface
      */
-    private $lineItemRepository;
+    private $orderRepository;
 
     /**
      * @var EntityRepositoryInterface
@@ -31,12 +32,12 @@ class OrderStateChangedSubscriber implements EventSubscriberInterface
 
     public function __construct(
         VoucherFundingMerchantService $voucherFundingService,
-        EntityRepositoryInterface $lineItemRepository,
+        EntityRepositoryInterface $orderRepository,
         EntityRepositoryInterface $merchantRepository
     )
     {
         $this->voucherFundingService = $voucherFundingService;
-        $this->lineItemRepository = $lineItemRepository;
+        $this->orderRepository = $orderRepository;
         $this->merchantRepository = $merchantRepository;
     }
 
@@ -49,38 +50,36 @@ class OrderStateChangedSubscriber implements EventSubscriberInterface
 
     public function orderTransactionStatePaid(OrderStateMachineStateChangeEvent $event) : void
     {
-        $order = $event->getOrder();
-
         $context = $event->getContext();
-
-        $voucherLineItems = $this->getVoucherLineItemsOfOrder($order->getId(), $context);
-
-        if(empty($voucherLineItems) || $voucherLineItems->count() === 0) {
+        $order = $this->getVoucherByOrderId($event->getOrder()->getId(), $context);
+        if(empty($order) || $order->getLineItems()->count() === 0) {
             return;
         }
 
         $merchant = $this->fetchMerchantFromSalesChannel($event->getSalesChannelId(), $context);
 
-        $this->voucherFundingService->createSoldVoucher($merchant, $order, $voucherLineItems->getEntities(), $context);
+        $this->voucherFundingService->createSoldVoucher($merchant, $order, $context);
     }
 
-    private function getVoucherLineItemsOfOrder(string $orderId, Context $context): EntitySearchResult
+    private function getVoucherByOrderId(string $orderId, Context $context): OrderEntity
     {
-        $lineItemCriteria = new Criteria();
-        $lineItemCriteria->addAssociation('product');
+        $criteria = new Criteria([$orderId]);
+        $criteria
+            ->addAssociation('orderCustomer.salutation')
+            ->addAssociation('lineItems.product')
+            ->addAssociation('lineItems.payload')
+            ->addAssociation('cartPrice.calculatedTaxes')
+            ->addAssociation('currency')
+            ->addAssociation('salesChannel')
+            ->addAssociation('transactions.stateMachineState');
 
-        $lineItemCriteria
-            ->addFilter(new EqualsFilter('type', LineItem::PRODUCT_LINE_ITEM_TYPE))
-            ->addFilter(new EqualsFilter('orderId', $orderId));
+        $criteria
+            ->addFilter(new EqualsFilter('lineItems.product.customFields.productType', 'voucher'));
 
+        /** @var OrderEntity $orderEntity */
+        $orderEntity = $this->orderRepository->search($criteria, $context)->first();
 
-        $lineItemCollection = $this->lineItemRepository->search($lineItemCriteria, $context);
-
-        return $lineItemCollection->filter(function(OrderLineItemEntity $orderLineItemEntity) {
-            $customFields = $orderLineItemEntity->getProduct()->getCustomFields();
-
-            return $customFields && $customFields['productType'] && $customFields['productType'] === 'voucher';
-        });
+        return $orderEntity;
     }
 
     /**

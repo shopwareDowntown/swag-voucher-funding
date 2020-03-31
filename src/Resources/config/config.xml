@@ -3,11 +3,19 @@
         xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/platform/master/src/Core/System/SystemConfig/Schema/config.xsd">
 
     <card>
-        <title>Options</title>
-        <title lang="de-DE">Optionen</title>
+        <title>Voucher PDF template</title>
+        <title lang="de-DE">Voucher PDF-Vorlage</title>
+        <component name="sw-code-editor">
+            <name>pdfTemplate</name>
+        </component>
+    </card>
+
+    <card>
+        <title>Setting mail for customer</title>
+        <title lang="de-DE">Mail für Kunden einstellen</title>
 
         <input-field>
-            <name>subject</name>
+            <name>customerSubject</name>
             <label>Subject</label>
             <label lang="de-DE">Gegenstand</label>
             <placeholder>Enter email template subject...</placeholder>
@@ -17,19 +25,68 @@
         </input-field>
 
         <input-field>
-            <name>senderName</name>
+            <name>customerSenderName</name>
             <label>Sender name</label>
             <label lang="de-DE">Absender</label>
             <placeholder>Enter sender name...</placeholder>
         </input-field>
-
     </card>
 
     <card>
-        <title>Voucher PDF template</title>
-        <title lang="de-DE">Voucher PDF-Vorlage</title>
+        <title>Customer mail template / HTML</title>
+        <title lang="de-DE">Kundenmail-Vorlage / HTML</title>
+
         <component name="sw-code-editor">
-            <name>pdfTemplate</name>
+            <name>customerHtmlTemplate</name>
+        </component>
+    </card>
+
+    <card>
+        <title>Customer mail template / Plain</title>
+        <title lang="de-DE">Kundenmail-Vorlage / Pain</title>
+
+        <component name="sw-code-editor">
+            <name>customerPlainTemplate</name>
+        </component>
+    </card>
+
+    <card>
+        <title>Setting Mail for merchant</title>
+        <title lang="de-DE">Mail für Händler einstellen</title>
+
+        <input-field>
+            <name>merchantSubject</name>
+            <label>Subject</label>
+            <label lang="de-DE">Gegenstand</label>
+            <placeholder>Enter email template subject...</placeholder>
+            <placeholder lang="de-DE">Betreff eingeben ..</placeholder>
+            <helpText>Please fill in Subject</helpText>
+            <helpText lang="de-DE">Bitte füllen Sie den Betreff aus</helpText>
+        </input-field>
+
+        <input-field>
+            <name>merchantSenderName</name>
+            <label>Sender name</label>
+            <label lang="de-DE">Absender</label>
+            <placeholder>Enter sender name...</placeholder>
+        </input-field>
+    </card>
+
+    <card>
+        <title>Merchant mail template / HTML</title>
+        <title lang="de-DE">Händlerpostvorlage / HTML</title>
+
+        <component name="sw-code-editor">
+            <name>merchantHtmlTemplate</name>
+        </component>
+    </card>
+
+    <card>
+        <title>Merchant mail template / Plain</title>
+        <title lang="de-DE">Händlerpostvorlage / Plain</title>
+
+        <component name="sw-code-editor">
+            <name>merchantPlainTemplate</name>
         </component>
     </card>
 </config>

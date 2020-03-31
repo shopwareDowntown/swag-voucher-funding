@@ -3,17 +3,15 @@
 namespace SwagVoucherFunding\Service;
 
 use Dompdf\Options;
-use Shopware\Core\Checkout\Order\Aggregate\OrderCustomer\OrderCustomerEntity;
+use Shopware\Core\Checkout\Order\OrderEntity;
 use Shopware\Core\Content\MailTemplate\Service\MailService;
 use Shopware\Core\Framework\Adapter\Twig\StringTemplateRenderer;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\ContainsFilter;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
-use Shopware\Core\System\Currency\CurrencyEntity;
 use Dompdf\Dompdf;
 use Shopware\Core\Framework\Validation\DataBag\DataBag;
-use Shopware\Core\System\Currency\CurrencyFormatter;
 use Shopware\Core\System\SystemConfig\SystemConfigEntity;
 use Shopware\Production\Merchants\Content\Merchant\MerchantEntity;
 
@@ -36,72 +34,47 @@ class VoucherFundingEmailService
      */
     private $templateRenderer;
 
-    /**
-     * @var CurrencyFormatter
-     */
-    private $currencyFormatter;
-
     public function __construct(
         EntityRepositoryInterface $systemConfigRepository,
         MailService $mailService,
-        StringTemplateRenderer $templateRenderer,
-        CurrencyFormatter $currencyFormatter
+        StringTemplateRenderer $templateRenderer
     ) {
         $this->systemConfigRepository = $systemConfigRepository;
         $this->mailService = $mailService;
         $this->templateRenderer = $templateRenderer;
-        $this->currencyFormatter = $currencyFormatter;
     }
 
     public function sendEmailCustomer(
         array $vouchers,
         MerchantEntity $merchant,
-        OrderCustomerEntity $orderCustomer,
-        CurrencyEntity $currencyEntity,
+        OrderEntity $order,
         Context $context
     ) : void
     {
         $customerName = sprintf('%s %s %s',
-            $orderCustomer->getSalutation()->getDisplayName(),
-            $orderCustomer->getFirstName(),
-            $orderCustomer->getLastName()
+            $order->getOrderCustomer()->getSalutation()->getDisplayName(),
+            $order->getOrderCustomer()->getFirstName(),
+            $order->getOrderCustomer()->getLastName()
         );
-
-        $currencyVouchers = [];
-        foreach ($vouchers as $voucher) {
-            $currencyVoucher['code'] = $voucher['code'];
-            $currencyVoucher['price'] = $this->currencyFormatter->formatCurrencyByLanguage(
-                $voucher['value']->getPrice(),
-                $currencyEntity->getIsoCode(),
-                $context->getLanguageId(),
-                $context
-            );
-            $currencyVouchers[] = $currencyVoucher;
-        }
-
 
         $templateData = [
             'merchant' => $merchant,
+            'order' => $order,
             'customerName' => $customerName,
-            'vouchers' => $currencyVouchers,
+            'vouchers' => $vouchers,
             'today' => date("d.m.Y")
         ];
 
         $data = new DataBag();
         $data->set('salesChannelId', $merchant->getSalesChannelId());
-        $data->set('subject', $this->getSystemConfig('subject', $merchant->getSalesChannelId(), $context));
-        $data->set('senderName', $this->getSystemConfig('senderName', $merchant->getSalesChannelId(), $context));
-        $data->set(
-            'recipients', [
-                $orderCustomer->getEmail() => $customerName
-            ]
-        );
+        $data->set('subject', $this->getSystemConfig('customerSubject', $merchant->getSalesChannelId(), $context));
+        $data->set('senderName', $this->getSystemConfig('customerSenderName', $merchant->getSalesChannelId(), $context));
+        $data->set('recipients', [$order->getOrderCustomer()->getEmail() => $customerName]);
+        $data->set('contentHtml', $this->getContentTemplate('customerHtmlTemplate', $templateData, $merchant, $context));
+        $data->set('contentPlain', $this->getContentTemplate('customerPlainTemplate', $templateData, $merchant, $context));
 
-        $contentTemplate = $this->getContentTemplate($templateData, $merchant, $context);
-        $data->set('contentHtml', $contentTemplate);
-        $data->set('contentPlain', sprintf('Thank you %s! Your purchased vouchers is included in the attachments!', $customerName));
-
-        $voucherPdf = $this->renderVoucherAttachment($contentTemplate);
+        $pdfTemplate = $this->getContentTemplate('pdfTemplate', $templateData, $merchant, $context);
+        $voucherPdf = $this->renderVoucherAttachment($pdfTemplate);
 
         $data->set('binAttachments', [[
             'content' => $voucherPdf,
@@ -112,10 +85,34 @@ class VoucherFundingEmailService
         $this->mailService->send($data->all(), $context, $templateData);
     }
 
-
-    private function getContentTemplate(array $data, MerchantEntity $merchant, Context $context): string
+    public function sendEmailMerchant(
+        array $vouchers,
+        MerchantEntity $merchant,
+        OrderEntity $order,
+        Context $context
+    ): void
     {
-        $config = $this->getSystemConfig('pdfTemplate', $merchant->getSalesChannelId(), $context);
+        $data = new DataBag();
+        $data->set('salesChannelId', $merchant->getSalesChannelId());
+        $data->set('subject', $this->getSystemConfig('merchantSubject', $merchant->getSalesChannelId(), $context));
+        $data->set('senderName', $this->getSystemConfig('merchantSenderName', $merchant->getSalesChannelId(), $context));
+        $data->set('recipients', [$merchant->getEmail() => $merchant->getPublicCompanyName()]);
+
+        $templateData = [
+            'merchant' => $merchant,
+            'order' => $order,
+            'vouchers' => $vouchers,
+            'today' => date("d.m.Y")
+        ];
+        $data->set('contentHtml', $this->getContentTemplate('merchantHtmlTemplate', $templateData, $merchant, $context));
+        $data->set('contentPlain', $this->getContentTemplate('merchantPlainTemplate', $templateData, $merchant, $context));
+
+        $this->mailService->send($data->all(), $context);
+    }
+
+    private function getContentTemplate(string $name, array $data, MerchantEntity $merchant, Context $context): string
+    {
+        $config = $this->getSystemConfig($name, $merchant->getSalesChannelId(), $context);
 
         return $this->templateRenderer->render($config, $data, $context);
     }
