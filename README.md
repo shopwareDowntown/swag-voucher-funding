@@ -23,7 +23,7 @@ mkdir plugins
 
 cd plugins
 
-git clone https://github.com/sw-tgs/SwagVoucherFunding
+git clone https://github.com/shopwareDowntown/swag-voucher-funding SwagVoucherFunding
 ```
 
 **2. Build Portal:**
@@ -70,6 +70,6 @@ bin/console plugin:list
 
 # Description
 
-Wiki: https://github.com/sw-tgs/SwagVoucherFunding/wiki Or https://github.com/shopware/portal/wiki/voucherFunding
+Wiki: https://github.com/shopwareDowntown/swag-voucher-funding/wiki Or https://github.com/shopware/portal/wiki/voucherFunding
 
 DB Diagram: https://dbdiagram.io/d/5e7cdec74495b02c3b88d20c
