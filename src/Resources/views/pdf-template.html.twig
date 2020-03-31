@@ -4,7 +4,7 @@
         <tr>
             <td valign="top" style="background-color: #e6e7e9; text-align: center;">
                <div style="color: #3c3c3c; padding-top: 80px; font-size: 50px;">GUTSCHEIN</div>
-               <div style="margin: 80px 120px; padding: 140px 60px 80px; color: #a79056; font-size: 110px; border-radius: 30px; background-color: white;">{{ voucher.price }}</div>
+               <div style="margin: 80px 120px; padding: 140px 60px 80px; color: #a79056; font-size: 110px; border-radius: 30px; background-color: white;">{{ voucher.value.price|currency(order.currency.isoCode) }}</div>
                <img src="https://vuejs.org/images/shopware_ag.png" height="60px" style="margin-bottom: 40px" />
            </td>
             <td style="width: 240px; padding: 30px">

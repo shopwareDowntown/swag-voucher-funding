@@ -3,6 +3,7 @@
 namespace SwagVoucherFunding\Service;
 
 use Shopware\Core\Checkout\Cart\Price\Struct\AbsolutePriceDefinition;
+use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemCollection;
 use Shopware\Core\Checkout\Order\OrderEntity;
 use Shopware\Core\Defaults;
 use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity;
@@ -19,7 +20,6 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class VoucherFundingMerchantService
 {
-    const TEMP_DIR = 'bundles/storefront';
     /**
      * @var EntityRepositoryInterface
      */
@@ -49,39 +49,26 @@ class VoucherFundingMerchantService
         return $this->soldVoucherRepository->search($criteria, $context->getContext())->getElements();
     }
 
-    /**
-     * @param  MerchantEntity  $merchant
-     * @param  OrderEntity $orderEntity
-     * @param  EntityCollection  $lineItemCollection
-     * @param  Context  $context
-     */
     public function createSoldVoucher(
         MerchantEntity $merchant,
-        OrderEntity $orderEntity,
-        EntityCollection $lineItemCollection,
+        OrderEntity $order,
         Context $context
     ) : void
     {
-        $vouchers = [];
         $merchantId = $merchant->getId();
-        $currencyId = $orderEntity->getCurrencyId();
-        $currency = $this->currencyRepository->search(new Criteria([$currencyId]), $context)->get($currencyId);
-
-        /** @var OrderLineItemEntity $lineItemEntity */
-        foreach ($lineItemCollection as $lineItemEntity) {
+        $vouchers = [];
+        foreach ($order->getLineItems() as $lineItemEntity) {
             $voucherNum = $lineItemEntity->getQuantity();
-            $voucherName = $lineItemEntity->getProduct()->getName();
-            $voucherLineItemId = $lineItemEntity->getId();
             $lineItemPrice = $lineItemEntity->getPriceDefinition();
             $voucherValue = new AbsolutePriceDefinition($lineItemPrice->getPrice(), $lineItemPrice->getPrecision());
 
             for ($i = 0; $i < $voucherNum; $i++) {
-                $code =  $this->generateUniqueVoucherCode($merchantId, $context);
+                $code = $this->generateUniqueVoucherCode($merchantId, $context);
 
                 $voucher = [];
                 $voucher['merchantId'] = $merchantId;
-                $voucher['orderLineItemId'] = $voucherLineItemId;
-                $voucher['name'] = $voucherName;
+                $voucher['orderLineItemId'] = $lineItemEntity->getId();
+                $voucher['name'] = $lineItemEntity->getProduct()->getName();
                 $voucher['code'] = $code;
                 $voucher['value'] = $voucherValue;
 
@@ -90,7 +77,8 @@ class VoucherFundingMerchantService
         }
 
         $this->soldVoucherRepository->create($vouchers, $context);
-        $this->voucherFundingEmailService->sendEmailCustomer($vouchers, $merchant, $orderEntity->getOrderCustomer(), $currency, $context);
+        $this->voucherFundingEmailService->sendEmailMerchant($vouchers, $merchant, $order, $context);
+        $this->voucherFundingEmailService->sendEmailCustomer($vouchers, $merchant, $order, $context);
     }
 
     public function redeemVoucher(string $voucherCode, MerchantEntity $merchant, SalesChannelContext $context) : void

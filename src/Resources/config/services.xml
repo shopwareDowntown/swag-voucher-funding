@@ -17,7 +17,6 @@
             <argument type="service" id="system_config.repository"/>
             <argument type="service" id="Shopware\Core\Content\MailTemplate\Service\MailService"/>
             <argument type="service" id="Shopware\Core\Framework\Adapter\Twig\StringTemplateRenderer"/>
-            <argument type="service" id="Shopware\Core\System\Currency\CurrencyFormatter"/>
         </service>
 
         <service id="SwagVoucherFunding\Service\VoucherFundingMerchantService">
@@ -37,7 +36,7 @@
 
         <service id="SwagVoucherFunding\Subscriber\OrderStateChangedSubscriber">
             <argument id="SwagVoucherFunding\Service\VoucherFundingMerchantService" type="service" />
-            <argument type="service" id="order_line_item.repository"/>
+            <argument type="service" id="order.repository"/>
             <argument type="service" id="merchant.repository"/>
             <tag name="kernel.event_subscriber"/>
         </service>
