@@ -1,0 +1,13 @@
+# ignore ide settings
+.idea/
+.vscode
+
+# ignore test output
+.phpunit.result.cache
+
+# ignore dependency folders
+vendor
+/composer.lock
+
+#ignore caches
+.php_cs.cache

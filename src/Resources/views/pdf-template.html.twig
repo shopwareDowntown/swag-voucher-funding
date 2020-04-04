@@ -9,10 +9,10 @@
            </td>
             <td style="width: 240px; padding: 30px">
                <p><strong>Einlöseadresse</strong></p>
-               <p>{{ merchant.publicCompanyName }}<br>{{ merchant.country }}, {{ merchant.city }}<br>{{ merchant.street }}</p>
-               <p>Telefon: {{ merchant.publicPhoneNumber }}<br>E-Mail: <a href="mailto:{{ merchant.publicEmail }}">{{ merchant.publicEmail }}</a><br>Web: <a href="{{ merchant.publicWebsite }}">{{ merchant.publicWebsite }}</a></p>
+               <p>{{ merchant.publicCompanyName }}<br>{{ merchant.street }}<br>{{ merchant.city }}</p>
+               <p>Telefon: {{ merchant.publicPhoneNumber }}<br>E-Mail: {{ merchant.publicEmail }}<br>Web: {{ merchant.publicWebsite }}</p>
                <p><br><strong>Ausgestellt auf</strong><p>
-               <p>{{ customerName }}</p>
+               <p>{{order.orderCustomer.salutation.displayName }} {{order.orderCustomer.firstName}} {{order.orderCustomer.lastName}}</p>
                <p><br><strong>Ausstellungsdatum</strong></p>
                <p>{{ today }}</p>
                <p><br><strong>Gutscheinnummer</strong></p>

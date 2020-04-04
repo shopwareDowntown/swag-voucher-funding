@@ -14,14 +14,14 @@
         </service>
 
         <service id="SwagVoucherFunding\Service\VoucherFundingEmailService">
-            <argument type="service" id="system_config.repository"/>
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
             <argument type="service" id="Shopware\Core\Content\MailTemplate\Service\MailService"/>
             <argument type="service" id="Shopware\Core\Framework\Adapter\Twig\StringTemplateRenderer"/>
+            <argument type="service" id="Shopware\Core\Checkout\Document\FileGenerator\FileGeneratorRegistry"/>
         </service>
 
         <service id="SwagVoucherFunding\Service\VoucherFundingMerchantService">
             <argument type="service" id="sold_voucher.repository"/>
-            <argument type="service" id="currency.repository"/>
             <argument type="service" id="SwagVoucherFunding\Service\VoucherFundingEmailService"/>
         </service>
 

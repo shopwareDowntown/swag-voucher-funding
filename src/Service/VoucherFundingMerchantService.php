@@ -1,21 +1,21 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace SwagVoucherFunding\Service;
 
 use Shopware\Core\Checkout\Cart\Price\Struct\AbsolutePriceDefinition;
-use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemCollection;
 use Shopware\Core\Checkout\Order\OrderEntity;
 use Shopware\Core\Defaults;
-use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity;
 use Shopware\Core\Framework\Context;
-use Shopware\Core\Framework\DataAbstractionLayer\EntityCollection;
+use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Sorting\FieldSorting;
 use Shopware\Core\Framework\Util\Random;
-use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Shopware\Production\Merchants\Content\Merchant\MerchantEntity;
 use SwagVoucherFunding\Checkout\SoldVoucher\SoldVoucherEntity;
+use SwagVoucherFunding\Checkout\SoldVoucher\VoucherStatuses;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class VoucherFundingMerchantService
@@ -26,43 +26,70 @@ class VoucherFundingMerchantService
     private $soldVoucherRepository;
 
     private $voucherFundingEmailService;
-    /**
-     * @var EntityRepositoryInterface
-     */
-    private $currencyRepository;
 
     public function __construct(
         EntityRepositoryInterface $soldVoucherRepository,
-        EntityRepositoryInterface $currencyRepository,
         VoucherFundingEmailService $voucherFundingEmailService
     ) {
         $this->soldVoucherRepository = $soldVoucherRepository;
         $this->voucherFundingEmailService = $voucherFundingEmailService;
-        $this->currencyRepository = $currencyRepository;
     }
 
-    public function loadSoldVouchers(string $merchantId, SalesChannelContext $context) : array
+    public function loadSoldVouchers(string $merchantId, Request $request, SalesChannelContext $context): array
     {
+        $limit = (int) $request->query->get('limit', 10);
+
         $criteria = new Criteria();
         $criteria->addFilter(new EqualsFilter('merchantId', $merchantId));
+        $criteria->setLimit($limit);
 
-        return $this->soldVoucherRepository->search($criteria, $context->getContext())->getElements();
+        if ($request->query->has('page')) {
+            $criteria->setOffset((int) $request->query->get('page') * $limit);
+        } else {
+            $criteria->setOffset((int) $request->query->get('offset', 0));
+        }
+
+        $criteria->setTotalCountMode(Criteria::TOTAL_COUNT_MODE_EXACT);
+        $criteria->addSorting(new FieldSorting('createdAt', FieldSorting::DESCENDING));
+
+        $soldVoucherCollection = $this->soldVoucherRepository->search($criteria, $context->getContext());
+        $data = [];
+
+        foreach ($soldVoucherCollection->getEntities() as $element) {
+            $data[] = [
+                'id' => $element->getId(),
+                'updatedAt' => $element->getUpdatedAt(),
+                'createdAt' => $element->getCreatedAt(),
+                'redeemedAt' => $element->getRedeemedAt(),
+                'status' => $element->getRedeemedAt() ? VoucherStatuses::USED_VOUCHER : VoucherStatuses::VALID_VOUCHER,
+                'code' => $element->getCode(),
+                'name' => $element->getName(),
+                'orderLineItemId' => $element->getOrderLineItemId(),
+                'value' => $element->getValue(),
+            ];
+        }
+
+        return [
+            'data' => $data,
+            'total' => $soldVoucherCollection->getTotal(),
+        ];
     }
 
     public function createSoldVoucher(
         MerchantEntity $merchant,
         OrderEntity $order,
         Context $context
-    ) : void
-    {
+    ): void {
         $merchantId = $merchant->getId();
         $vouchers = [];
+
         foreach ($order->getLineItems() as $lineItemEntity) {
             $voucherNum = $lineItemEntity->getQuantity();
             $lineItemPrice = $lineItemEntity->getPriceDefinition();
+
             $voucherValue = new AbsolutePriceDefinition($lineItemPrice->getPrice(), $lineItemPrice->getPrecision());
 
-            for ($i = 0; $i < $voucherNum; $i++) {
+            for ($i = 0; $i < $voucherNum; ++$i) {
                 $code = $this->generateUniqueVoucherCode($merchantId, $context);
 
                 $voucher = [];
@@ -77,11 +104,11 @@ class VoucherFundingMerchantService
         }
 
         $this->soldVoucherRepository->create($vouchers, $context);
-        $this->voucherFundingEmailService->sendEmailMerchant($vouchers, $merchant, $order, $context);
-        $this->voucherFundingEmailService->sendEmailCustomer($vouchers, $merchant, $order, $context);
+
+        $this->notifyToMerchantAndCustomer($merchant, $order, $vouchers, $context);
     }
 
-    public function redeemVoucher(string $voucherCode, MerchantEntity $merchant, SalesChannelContext $context) : void
+    public function redeemVoucher(string $voucherCode, MerchantEntity $merchant, SalesChannelContext $context): void
     {
         $criteria = new Criteria();
         $criteria->addFilter(new EqualsFilter('code', $voucherCode));
@@ -91,13 +118,13 @@ class VoucherFundingMerchantService
         /** @var SoldVoucherEntity $voucher */
         $voucher = $this->soldVoucherRepository->search($criteria, $context->getContext())->first();
 
-        if(!$voucher) {
+        if (!$voucher) {
             throw new NotFoundHttpException(sprintf('Cannot find valid voucher with code %s', $voucherCode));
         }
 
         $this->soldVoucherRepository->update([[
             'id' => $voucher->getId(),
-            'redeemedAt' => (new \DateTime())->format(Defaults::STORAGE_DATE_TIME_FORMAT)
+            'redeemedAt' => (new \DateTime())->format(Defaults::STORAGE_DATE_TIME_FORMAT),
         ]], $context->getContext());
     }
 
@@ -111,27 +138,36 @@ class VoucherFundingMerchantService
         /** @var SoldVoucherEntity $voucher */
         $voucher = $this->soldVoucherRepository->search($criteria, $context->getContext())->first();
 
-        $data = [
-            'status' => 'invalid',
-            'customer' => null
-        ];
-
-        if(!$voucher) {
-            return $data;
+        if (empty($voucher)) {
+            return [
+                'status' => VoucherStatuses::INVALID_VOUCHER,
+            ];
         }
 
-        $data['customer'] = $voucher->getOrderLineItem()->getOrder()->getOrderCustomer();
+        return [
+            'customer' => $voucher->getOrderLineItem()->getOrder()->getOrderCustomer(),
+            'status' => $voucher->getRedeemedAt() ? VoucherStatuses::USED_VOUCHER : VoucherStatuses::VALID_VOUCHER,
+        ];
+    }
 
-        $data['status'] = $voucher->getRedeemedAt() ? 'used' : 'valid';
+    private function notifyToMerchantAndCustomer(MerchantEntity $merchant, OrderEntity $order, array $vouchers, Context $context): void
+    {
+        $templateData = [
+            'merchant' => $merchant,
+            'order' => $order,
+            'vouchers' => $vouchers,
+            'today' => (new \DateTime())->format(Defaults::STORAGE_DATE_FORMAT),
+        ];
 
-        return $data;
+        $this->voucherFundingEmailService->sendEmailCustomer($templateData, $merchant->getSalesChannelId(), $order->getOrderCustomer(), $context);
+        $this->voucherFundingEmailService->sendEmailMerchant($templateData, $merchant, $context);
     }
 
     private function generateUniqueVoucherCode(string $merchantId, Context $context)
     {
         $code = $this->generateVoucherCode();
 
-        if($this->checkCodeUnique($merchantId, $code, $context)) {
+        if ($this->checkCodeUnique($merchantId, $code, $context)) {
             return $code;
         }
 
