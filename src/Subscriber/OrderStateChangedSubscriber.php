@@ -1,9 +1,8 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace SwagVoucherFunding\Subscriber;
 
 use Shopware\Core\Checkout\Cart\LineItem\LineItem;
-use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemCollection;
 use Shopware\Core\Checkout\Order\Event\OrderStateMachineStateChangeEvent;
 use Shopware\Core\Checkout\Order\OrderEntity;
 use Shopware\Core\Framework\Api\Exception\InvalidSalesChannelIdException;
@@ -34,8 +33,7 @@ class OrderStateChangedSubscriber implements EventSubscriberInterface
         VoucherFundingMerchantService $voucherFundingService,
         EntityRepositoryInterface $orderRepository,
         EntityRepositoryInterface $merchantRepository
-    )
-    {
+    ) {
         $this->voucherFundingService = $voucherFundingService;
         $this->orderRepository = $orderRepository;
         $this->merchantRepository = $merchantRepository;
@@ -44,15 +42,16 @@ class OrderStateChangedSubscriber implements EventSubscriberInterface
     public static function getSubscribedEvents()
     {
         return [
-            'state_enter.order_transaction.state.paid' => 'orderTransactionStatePaid',
+            'state_enter.order.state.completed' => 'orderStateCompleted',
         ];
     }
 
-    public function orderTransactionStatePaid(OrderStateMachineStateChangeEvent $event) : void
+    public function orderStateCompleted(OrderStateMachineStateChangeEvent $event): void
     {
         $context = $event->getContext();
         $order = $this->getVoucherByOrderId($event->getOrder()->getId(), $context);
-        if(empty($order) || $order->getLineItems()->count() === 0) {
+
+        if (empty($order) || $order->getLineItems()->count() === 0) {
             return;
         }
 
@@ -74,6 +73,7 @@ class OrderStateChangedSubscriber implements EventSubscriberInterface
             ->addAssociation('transactions.stateMachineState');
 
         $criteria
+            ->addFilter(new EqualsFilter('lineItems.type', LineItem::PRODUCT_LINE_ITEM_TYPE))
             ->addFilter(new EqualsFilter('lineItems.product.customFields.productType', 'voucher'));
 
         /** @var OrderEntity $orderEntity */

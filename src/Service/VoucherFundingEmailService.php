@@ -1,18 +1,16 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace SwagVoucherFunding\Service;
 
-use Dompdf\Options;
-use Shopware\Core\Checkout\Order\OrderEntity;
+use Shopware\Core\Checkout\Document\FileGenerator\FileGeneratorRegistry;
+use Shopware\Core\Checkout\Document\FileGenerator\PdfGenerator;
+use Shopware\Core\Checkout\Document\GeneratedDocument;
+use Shopware\Core\Checkout\Order\Aggregate\OrderCustomer\OrderCustomerEntity;
 use Shopware\Core\Content\MailTemplate\Service\MailService;
 use Shopware\Core\Framework\Adapter\Twig\StringTemplateRenderer;
 use Shopware\Core\Framework\Context;
-use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
-use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\ContainsFilter;
-use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
-use Dompdf\Dompdf;
 use Shopware\Core\Framework\Validation\DataBag\DataBag;
-use Shopware\Core\System\SystemConfig\SystemConfigEntity;
+use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Shopware\Production\Merchants\Content\Merchant\MerchantEntity;
 
 class VoucherFundingEmailService
@@ -20,9 +18,9 @@ class VoucherFundingEmailService
     const VOUCHER_PDF_NAME = 'downtown-gutschein.pdf';
 
     /**
-     * @var EntityRepositoryInterface
+     * @var SystemConfigService
      */
-    private $systemConfigRepository;
+    private $systemConfigService;
 
     /**
      * @var MailService
@@ -34,123 +32,94 @@ class VoucherFundingEmailService
      */
     private $templateRenderer;
 
+    /**
+     * @var FileGeneratorRegistry
+     */
+    private $fileGeneratorRegistry;
+
     public function __construct(
-        EntityRepositoryInterface $systemConfigRepository,
+        SystemConfigService $systemConfigService,
         MailService $mailService,
-        StringTemplateRenderer $templateRenderer
+        StringTemplateRenderer $templateRenderer,
+        FileGeneratorRegistry $fileGeneratorRegistry
     ) {
-        $this->systemConfigRepository = $systemConfigRepository;
+        $this->systemConfigService = $systemConfigService;
         $this->mailService = $mailService;
         $this->templateRenderer = $templateRenderer;
+        $this->fileGeneratorRegistry = $fileGeneratorRegistry;
     }
 
     public function sendEmailCustomer(
-        array $vouchers,
-        MerchantEntity $merchant,
-        OrderEntity $order,
+        array $templateData,
+        string $salesChannelId,
+        OrderCustomerEntity $customerEntity,
         Context $context
-    ) : void
-    {
+    ): void {
         $customerName = sprintf('%s %s %s',
-            $order->getOrderCustomer()->getSalutation()->getDisplayName(),
-            $order->getOrderCustomer()->getFirstName(),
-            $order->getOrderCustomer()->getLastName()
+            $customerEntity->getSalutation()->getDisplayName(),
+            $customerEntity->getFirstName(),
+            $customerEntity->getLastName()
         );
 
-        $templateData = [
-            'merchant' => $merchant,
-            'order' => $order,
-            'customerName' => $customerName,
-            'vouchers' => $vouchers,
-            'today' => date("d.m.Y")
-        ];
-
         $data = new DataBag();
-        $data->set('salesChannelId', $merchant->getSalesChannelId());
-        $data->set('subject', $this->getSystemConfig('customerSubject', $merchant->getSalesChannelId(), $context));
-        $data->set('senderName', $this->getSystemConfig('customerSenderName', $merchant->getSalesChannelId(), $context));
-        $data->set('recipients', [$order->getOrderCustomer()->getEmail() => $customerName]);
-        $data->set('contentHtml', $this->getContentTemplate('customerHtmlTemplate', $templateData, $merchant, $context));
-        $data->set('contentPlain', $this->getContentTemplate('customerPlainTemplate', $templateData, $merchant, $context));
+        $data->set('salesChannelId', $salesChannelId);
+        $data->set('subject', $this->getPluginConfig('customerSubject', $salesChannelId));
+        $data->set('senderName', $this->getPluginConfig('customerSenderName', $salesChannelId));
+        $data->set('recipients', [$customerEntity->getEmail() => $customerName]);
+        $data->set('contentHtml', $this->getPluginConfig('customerHtmlTemplate', $salesChannelId));
+        $data->set('contentPlain', $this->getPluginConfig('customerPlainTemplate', $salesChannelId));
 
-        $pdfTemplate = $this->getContentTemplate('pdfTemplate', $templateData, $merchant, $context);
-        $voucherPdf = $this->renderVoucherAttachment($pdfTemplate);
+        $voucherTemplate = $this->getContentTemplate('pdfTemplate', $templateData, $salesChannelId, $context);
+        $voucherAttachment = $this->renderVoucherAttachment($voucherTemplate);
+        $pdfGenerator = $this->fileGeneratorRegistry->getGenerator(PdfGenerator::FILE_EXTENSION);
 
         $data->set('binAttachments', [[
-            'content' => $voucherPdf,
-            'fileName' => self::VOUCHER_PDF_NAME,
-            'mimeType' => 'application/pdf',
+            'content' => $pdfGenerator->generate($voucherAttachment),
+            'fileName' => $voucherAttachment->getFilename(),
+            'mimeType' => $voucherAttachment->getContentType(),
         ]]);
 
         $this->mailService->send($data->all(), $context, $templateData);
     }
 
     public function sendEmailMerchant(
-        array $vouchers,
+        array $templateData,
         MerchantEntity $merchant,
-        OrderEntity $order,
         Context $context
-    ): void
-    {
+    ): void {
+        $salesChannelId = $merchant->getSalesChannelId();
         $data = new DataBag();
-        $data->set('salesChannelId', $merchant->getSalesChannelId());
-        $data->set('subject', $this->getSystemConfig('merchantSubject', $merchant->getSalesChannelId(), $context));
-        $data->set('senderName', $this->getSystemConfig('merchantSenderName', $merchant->getSalesChannelId(), $context));
+        $data->set('salesChannelId', $salesChannelId);
+        $data->set('subject', $this->getPluginConfig('merchantSubject', $salesChannelId));
+        $data->set('senderName', $this->getPluginConfig('merchantSenderName', $salesChannelId));
         $data->set('recipients', [$merchant->getEmail() => $merchant->getPublicCompanyName()]);
+        $data->set('contentHtml', $this->getPluginConfig('merchantHtmlTemplate', $salesChannelId));
+        $data->set('contentPlain', $this->getPluginConfig('merchantPlainTemplate', $salesChannelId));
 
-        $templateData = [
-            'merchant' => $merchant,
-            'order' => $order,
-            'vouchers' => $vouchers,
-            'today' => date("d.m.Y")
-        ];
-        $data->set('contentHtml', $this->getContentTemplate('merchantHtmlTemplate', $templateData, $merchant, $context));
-        $data->set('contentPlain', $this->getContentTemplate('merchantPlainTemplate', $templateData, $merchant, $context));
-
-        $this->mailService->send($data->all(), $context);
+        $this->mailService->send($data->all(), $context, $templateData);
     }
 
-    private function getContentTemplate(string $name, array $data, MerchantEntity $merchant, Context $context): string
+    private function getPluginConfig(string $value, string $salesChannelId): string
     {
-        $config = $this->getSystemConfig($name, $merchant->getSalesChannelId(), $context);
+        return (string) $this->systemConfigService->get('SwagVoucherFunding.config.' . $value, $salesChannelId);
+    }
+
+    private function renderVoucherAttachment(string $htmlContent): GeneratedDocument
+    {
+        $generatedDocument = new GeneratedDocument();
+        $generatedDocument->setHtml($htmlContent);
+        $generatedDocument->setFilename(self::VOUCHER_PDF_NAME);
+        $generatedDocument->setPageOrientation('landscape');
+        $generatedDocument->setPageSize('a4');
+        $generatedDocument->setContentType(PdfGenerator::FILE_CONTENT_TYPE);
+
+        return $generatedDocument;
+    }
+
+    private function getContentTemplate(string $name, array $data, string $salesChannelId, Context $context): string
+    {
+        $config = $this->getPluginConfig($name, $salesChannelId);
 
         return $this->templateRenderer->render($config, $data, $context);
-    }
-
-    private function renderVoucherAttachment(string $contentTemplate): string
-    {
-        $options = new Options();
-        $options->setDefaultFont('Arial');
-        $options->setIsPhpEnabled(true);
-        $options->setIsRemoteEnabled(true);
-
-        $dompdf = new Dompdf();
-        $dompdf->setPaper('A4', 'landscape');
-        $dompdf->setOptions($options);
-        $dompdf->loadHtml($contentTemplate);
-        $dompdf->render();
-
-        return $dompdf->output();
-    }
-
-    private function getSystemConfig(string $value, string $salesChannelId, Context $context): String
-    {
-        $criteria = new Criteria();
-        $criteria->addFilter(new ContainsFilter('configurationKey', 'SwagVoucherFunding.config.' . $value));
-
-        $systemConfigs = $this->systemConfigRepository->search($criteria, $context)->getEntities();
-        if (empty($systemConfigs)) {
-            throw new \InvalidArgumentException('Error');
-        }
-
-        $systemConfigs->filter(function (SystemConfigEntity $systemConfig) use ($salesChannelId) {
-            return $systemConfig->getSalesChannelId() === $salesChannelId;
-        });
-
-        if (empty($systemConfig)) {
-            $systemConfig = $systemConfigs->first();
-        }
-
-        return $systemConfig->getConfigurationValue();
     }
 }

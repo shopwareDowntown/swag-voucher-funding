@@ -39,72 +39,72 @@ class SwagVoucherFunding extends Plugin
             [
                 'id' => Uuid::randomHex(),
                 'configurationKey' => $this->getName() . '.config.pdfTemplate',
-                'configurationValue' => $this->getPdfTemplate()
-            ]
+                'configurationValue' => $this->getPdfTemplate(),
+            ],
         ], $context);
 
         $systemConfigRepository->create([
             [
                 'id' => Uuid::randomHex(),
                 'configurationKey' => $this->getName() . '.config.customerSubject',
-                'configurationValue' => 'Your voucher with {{ merchant.publicCompanyName }}'
-            ]
+                'configurationValue' => 'Your vouchers with {{ merchant.publicCompanyName }}',
+            ],
         ], $context);
 
         $systemConfigRepository->create([
             [
                 'id' => Uuid::randomHex(),
                 'configurationKey' => $this->getName() . '.config.customerSenderName',
-                'configurationValue' => '{{ merchant.publicCompanyName }}'
-            ]
+                'configurationValue' => '{{ merchant.publicCompanyName }}',
+            ],
         ], $context);
 
         $systemConfigRepository->create([
             [
                 'id' => Uuid::randomHex(),
                 'configurationKey' => $this->getName() . '.config.customerHtmlTemplate',
-                'configurationValue' => $this->getCustomerMailHTMLTemplate()
-            ]
+                'configurationValue' => $this->getCustomerMailHTMLTemplate(),
+            ],
         ], $context);
 
         $systemConfigRepository->create([
             [
                 'id' => Uuid::randomHex(),
                 'configurationKey' => $this->getName() . '.config.customerPlainTemplate',
-                'configurationValue' => $this->getCustomerMailPlainTemplate()
-            ]
+                'configurationValue' => $this->getCustomerMailPlainTemplate(),
+            ],
         ], $context);
 
         $systemConfigRepository->create([
             [
                 'id' => Uuid::randomHex(),
                 'configurationKey' => $this->getName() . '.config.merchantSubject',
-                'configurationValue' => 'We have just issued a voucher for your customer'
-            ]
+                'configurationValue' => 'We have just issued vouchers for your customer',
+            ],
         ], $context);
 
         $systemConfigRepository->create([
             [
                 'id' => Uuid::randomHex(),
                 'configurationKey' => $this->getName() . '.config.merchantSenderName',
-                'configurationValue' => 'Shopware AG'
-            ]
+                'configurationValue' => 'Shopware AG',
+            ],
         ], $context);
 
         $systemConfigRepository->create([
             [
                 'id' => Uuid::randomHex(),
                 'configurationKey' => $this->getName() . '.config.merchantHtmlTemplate',
-                'configurationValue' => $this->getMerchantMailHTMLTemplate()
-            ]
+                'configurationValue' => $this->getMerchantMailHTMLTemplate(),
+            ],
         ], $context);
 
         $systemConfigRepository->create([
             [
                 'id' => Uuid::randomHex(),
                 'configurationKey' => $this->getName() . '.config.merchantPlainTemplate',
-                'configurationValue' => $this->getMerchantMailPlainTemplate()
-            ]
+                'configurationValue' => $this->getMerchantMailPlainTemplate(),
+            ],
         ], $context);
     }
 

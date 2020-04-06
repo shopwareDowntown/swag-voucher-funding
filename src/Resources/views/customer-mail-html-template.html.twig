@@ -2,9 +2,10 @@
     <br/>
         {{order.orderCustomer.salutation.letterName }} {{order.orderCustomer.firstName}} {{order.orderCustomer.lastName}},<br/>
         <br/>
-        Thank you for your order at {{ order.salesChannel.name }} (Number: {{order.orderNumber}}) on {{ order.orderDateTime|date }}.<br/>
-        The status of this order at {{ order.salesChannel.name }} (Number: {{order.orderNumber}}) on {{ order.orderDateTime|date }} has changed.<br/>
-        <strong>The new status is as follows: {{order.transactions.first.stateMachineState.name}}.</strong><br/>
+        Thank you for your order at {{ merchant.publicCompanyName }} (Number: {{order.orderNumber}}) on {{ order.orderDateTime|date }}.<br/>
+        <strong>Your purchased vouchers are included in this email's attachment file</strong><br/><br/>
+        The status of this order at {{ merchant.publicCompanyName }} (Number: {{order.orderNumber}}) on {{ order.orderDateTime|date }} has changed.<br/>
+        <strong>The new status is as follows: {{order.stateMachineState.name}}.</strong><br/>
         <br/>
         <strong>Information on your order:</strong><br>
         <br>

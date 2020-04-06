@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace SwagVoucherFunding\Service;
 
@@ -45,6 +45,7 @@ class CartValidator implements CartValidatorInterface
             if (!$product) {
                 $errorCollection->add(new IncompleteLineItemError($lineItem->getId(), 'productId'));
                 $cart->getLineItems()->removeElement($lineItem);
+
                 continue;
             }
 

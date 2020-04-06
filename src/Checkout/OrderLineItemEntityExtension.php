@@ -16,7 +16,7 @@ class OrderLineItemEntityExtension implements EntityExtensionInterface
     }
 
     /**
-     * @inheritDoc
+     * {@inheritdoc}
      */
     public function extendFields(FieldCollection $collection): void
     {
